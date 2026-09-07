@@ -70,8 +70,6 @@ public class AlertQueueFragment extends Fragment {
     private List<AlertEventRule> rules = new ArrayList<>();
 
     private SwitchCompat swAlertQueue;
-    private SwitchCompat swAlertInterrupts;
-    private boolean reloadingMixSwitch = false;
     private TextView tvEmpty;
     private RecyclerView rvAlerts;
     private AlertAdapter adapter;
@@ -134,19 +132,9 @@ public class AlertQueueFragment extends Fragment {
                         Toast.LENGTH_SHORT).show();
             }
         });
-        androidx.appcompat.widget.SwitchCompat swInterrupt =
-                view.findViewById(R.id.sw_alert_interrupts_tts);
-        this.swAlertInterrupts = swInterrupt;
-        swInterrupt.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (settingsManager != null && !reloadingMixSwitch) {
-                settingsManager.setAlertInterruptsTts(isChecked);
-                Toast.makeText(requireContext(),
-                        isChecked ? "TTS akan dijeda saat suara alert berbunyi"
-                                : "TTS tidak dijeda oleh suara alert",
-                        Toast.LENGTH_SHORT).show();
-            }
-        });
+
         view.findViewById(R.id.btn_add_event).setOnClickListener(v -> openEditor(null));
+        view.findViewById(R.id.btn_alert_settings).setOnClickListener(v -> openAlertSettingsSheet());
 
         adapter = new AlertAdapter(rules, new AlertAdapter.Callbacks() {
             @Override
@@ -201,14 +189,6 @@ public class AlertQueueFragment extends Fragment {
         }
 
         swAlertQueue.setChecked(settingsManager.isAlertQueueEnabled());
-        reloadingMixSwitch = true;
-        try {
-            if (swAlertInterrupts != null) {
-                swAlertInterrupts.setChecked(settingsManager.isAlertInterruptsTts());
-            }
-        } finally {
-            reloadingMixSwitch = false;
-        }
         rules = new ArrayList<>(settingsManager.getAlertQueueRules());
         adapter.submit(rules);
         tvEmpty.setVisibility(rules.isEmpty() ? View.VISIBLE : View.GONE);
@@ -217,6 +197,80 @@ public class AlertQueueFragment extends Fragment {
     private void persist(List<AlertEventRule> list) {
         if (settingsManager != null) {
             settingsManager.setAlertQueueRules(list);
+        }
+    }
+
+    private void openAlertSettingsSheet() {
+        if (settingsManager == null) return;
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View sheet = LayoutInflater.from(requireContext()).inflate(R.layout.sheet_alert_settings, null);
+        dialog.setContentView(sheet);
+
+        SwitchCompat swInterrupts = sheet.findViewById(R.id.sw_sheet_alert_interrupts);
+        SwitchCompat swDelay = sheet.findViewById(R.id.sw_sheet_alert_delay);
+        LinearLayout llDelayOptions = sheet.findViewById(R.id.ll_sheet_delay_options);
+        ChipGroup chipsDelayMode = sheet.findViewById(R.id.chips_delay_mode);
+        LinearLayout llDelayFixed = sheet.findViewById(R.id.ll_delay_fixed);
+        SeekBar seekDelaySeconds = sheet.findViewById(R.id.seek_delay_seconds);
+        TextView tvDelayValue = sheet.findViewById(R.id.tv_delay_value);
+        TextView tvDelayDesc = sheet.findViewById(R.id.tv_delay_desc);
+
+        // Current states
+        swInterrupts.setChecked(settingsManager.isAlertInterruptsTts());
+        swDelay.setChecked(settingsManager.isAlertDelayEnabled());
+        llDelayOptions.setVisibility(swDelay.isChecked() ? View.VISIBLE : View.GONE);
+        
+        boolean fixedMode = SettingsManager.DELAY_MODE_FIXED.equals(settingsManager.getAlertDelayMode());
+        chipsDelayMode.check(fixedMode ? R.id.chip_delay_fixed : R.id.chip_delay_duration);
+        llDelayFixed.setVisibility(fixedMode ? View.VISIBLE : View.GONE);
+        
+        seekDelaySeconds.setProgress(settingsManager.getAlertDelaySeconds());
+        tvDelayValue.setText(settingsManager.getAlertDelaySeconds() + " detik");
+        updateDelayDescription(tvDelayDesc, settingsManager.getAlertDelayMode());
+
+        // Listeners
+        swInterrupts.setOnCheckedChangeListener((btn, isChecked) -> {
+            settingsManager.setAlertInterruptsTts(isChecked);
+        });
+
+        swDelay.setOnCheckedChangeListener((btn, isChecked) -> {
+            settingsManager.setAlertDelayEnabled(isChecked);
+            llDelayOptions.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+        });
+
+        chipsDelayMode.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            int checkedId = group.getCheckedChipId();
+            boolean isFixed = checkedId == R.id.chip_delay_fixed;
+            llDelayFixed.setVisibility(isFixed ? View.VISIBLE : View.GONE);
+            String mode = isFixed ? SettingsManager.DELAY_MODE_FIXED : SettingsManager.DELAY_MODE_DURATION;
+            settingsManager.setAlertDelayMode(mode);
+            updateDelayDescription(tvDelayDesc, mode);
+        });
+
+        seekDelaySeconds.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int secs = Math.max(0, progress);
+                tvDelayValue.setText(secs + " detik");
+                if (fromUser) {
+                    settingsManager.setAlertDelaySeconds(secs);
+                    updateDelayDescription(tvDelayDesc, settingsManager.getAlertDelayMode());
+                }
+            }
+
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        dialog.show();
+    }
+
+    private void updateDelayDescription(TextView tvDelayDesc, String mode) {
+        if (SettingsManager.DELAY_MODE_DURATION.equals(mode)) {
+            tvDelayDesc.setText("Suara berikutnya bunyi tepat saat audio selesai");
+        } else {
+            int secs = settingsManager.getAlertDelaySeconds();
+            tvDelayDesc.setText("Jeda " + secs + " detik setelah audio sebelum suara berikutnya");
         }
     }
 
@@ -315,9 +369,6 @@ public class AlertQueueFragment extends Fragment {
                 return;
             }
 
-            // One rule per event target: replace an existing rule with the same
-            // target (any-gift replaces any-gift; a gift-name replaces the same
-            // gift name).
             final boolean specificNow = AlertEventRule.TYPE_GIFT_SPECIFIC.equals(type);
             final String giftTarget = specificNow ? normalizeGift(temp.giftName) : null;
             List<AlertEventRule> list = new ArrayList<>(settingsManager.getAlertQueueRules());
@@ -575,8 +626,6 @@ public class AlertQueueFragment extends Fragment {
                 throw new java.io.IOException("Gagal membuat folder suara");
             }
 
-            // Re-using a name overwrites the previous copy so the list never
-            // accumulates duplicates.
             File target = new File(customDir, name + "." + extensionFor(name, uri));
             try (InputStream is = requireContext().getContentResolver().openInputStream(uri);
                  FileOutputStream fos = new FileOutputStream(target)) {
@@ -755,11 +804,8 @@ public class AlertQueueFragment extends Fragment {
 
         interface Callbacks {
             void onEdit(AlertEventRule rule);
-
             void onToggle(AlertEventRule rule, boolean enabled);
-
             void onPreview(AlertEventRule rule);
-
             void onDelete(AlertEventRule rule);
         }
 
@@ -855,7 +901,7 @@ public class AlertQueueFragment extends Fragment {
             final TextView tvAvatar;
             final TextView tvTitle;
             final TextView tvSubtitle;
-            final SwitchCompat swEnabled;
+            final androidx.appcompat.widget.SwitchCompat swEnabled;
             final ImageView ivPreview;
             final ImageView ivDelete;
 

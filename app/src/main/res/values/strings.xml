@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">TikTok Sound Alerts</string>
-    <string name="app_title">TikTok Sound Alerts</string>
+    <string name="app_name">TIKIFY</string>
+    <string name="app_title">TIKIFY</string>
     <string name="hint_hostname">TikTok username</string>
     <string name="btn_connect">Connect</string>
     <string name="btn_stop">Stop</string>

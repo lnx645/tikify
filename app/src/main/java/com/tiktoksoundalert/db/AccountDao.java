@@ -31,6 +31,9 @@ public interface AccountDao {
     @Query("UPDATE accounts SET is_active = 1, last_used_at = :now WHERE id = :id")
     void setActive(long id, long now);
 
+    @Query("UPDATE accounts SET avatar_url = :url WHERE id = :id")
+    void updateAvatarUrl(long id, String url);
+
     @Query("DELETE FROM accounts WHERE id = :id")
     void deleteById(long id);
 }

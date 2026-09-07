@@ -24,4 +24,7 @@ public class Account {
 
     @ColumnInfo(name = "is_active")
     public boolean isActive;
+
+    @ColumnInfo(name = "avatar_url")
+    public String avatarUrl;
 }

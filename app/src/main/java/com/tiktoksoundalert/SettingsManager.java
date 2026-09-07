@@ -250,6 +250,37 @@ public class SettingsManager {
         set(SettingsRepository.KEY_ALERT_INTERRUPTS_TTS, interrupts);
     }
 
+    // Alert queue delay ("fixed" seconds or "duration" = wait until the audio ends)
+    public static final String DELAY_MODE_FIXED = "fixed";
+    public static final String DELAY_MODE_DURATION = "duration";
+
+    public boolean isAlertDelayEnabled() {
+        return getBool(SettingsRepository.KEY_ALERT_DELAY_ENABLED, false);
+    }
+
+    public void setAlertDelayEnabled(boolean enabled) {
+        set(SettingsRepository.KEY_ALERT_DELAY_ENABLED, enabled);
+    }
+
+    public String getAlertDelayMode() {
+        String m = getStr(SettingsRepository.KEY_ALERT_DELAY_MODE, DELAY_MODE_FIXED);
+        return DELAY_MODE_DURATION.equals(m) ? DELAY_MODE_DURATION : DELAY_MODE_FIXED;
+    }
+
+    public void setAlertDelayMode(String mode) {
+        set(SettingsRepository.KEY_ALERT_DELAY_MODE,
+                DELAY_MODE_DURATION.equals(mode) ? DELAY_MODE_DURATION : DELAY_MODE_FIXED);
+    }
+
+    public int getAlertDelaySeconds() {
+        return Math.max(0, Math.min(30, getInt(SettingsRepository.KEY_ALERT_DELAY_SECONDS, 2)));
+    }
+
+    public void setAlertDelaySeconds(int seconds) {
+        set(SettingsRepository.KEY_ALERT_DELAY_SECONDS,
+                String.valueOf(Math.max(0, Math.min(30, seconds))));
+    }
+
     /** First rule matching the given event type (FOLLOW / SHARE / GIFT), or null. */
     public com.tiktoksoundalert.models.AlertEventRule getAlertQueueRule(String type) {
         for (com.tiktoksoundalert.models.AlertEventRule rule : getAlertQueueRules()) {

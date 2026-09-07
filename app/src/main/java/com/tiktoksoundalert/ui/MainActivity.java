@@ -6,10 +6,13 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,6 +21,7 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.content.res.AppCompatResources;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
@@ -26,13 +30,17 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.navigation.NavigationView;
 import com.tiktoksoundalert.R;
+import com.tiktoksoundalert.SettingsManager;
 import com.tiktoksoundalert.db.Account;
 import com.tiktoksoundalert.db.AccountDao;
 import com.tiktoksoundalert.db.AppDatabase;
 import com.tiktoksoundalert.service.TikTokService;
+import com.tiktoksoundalert.SettingsRepository;
 import com.tiktoksoundalert.tiktok.TikTokAvatarResolver;
 import com.tiktoksoundalert.ui.SettingsActivity;
 
@@ -161,11 +169,7 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra(SettingsActivity.EXTRA_SECTION, SettingsActivity.KEY_GENERAL);
             startActivity(intent);
         } else if (id == R.id.nav_about) {
-            new AlertDialog.Builder(this)
-                    .setTitle("About")
-                    .setMessage("TikTok Sound Alerts v1.0.0\nLIVE alert system with TTS and gift sounds.")
-                    .setPositiveButton("OK", null)
-                    .show();
+            startActivity(new Intent(this, AboutActivity.class));
         }
         return true;
     }
@@ -182,34 +186,52 @@ public class MainActivity extends AppCompatActivity {
                         drawerAccount.setText("No account selected");
                     }
                 }
-                loadHostAvatar(active != null ? active.nickname : null);
+                loadHostAvatar(active);
             });
         });
     }
 
-    /** Load the active host's TikTok avatar into the drawer (cached, then fetched). */
-    private void loadHostAvatar(String nickname) {
-        if (ivDrawerAvatar == null || nickname == null) {
-            if (ivDrawerAvatar != null) {
-                ivDrawerAvatar.setImageResource(R.drawable.ic_profile);
-            }
+    /** Load the active host's TikTok avatar into the drawer, preferring the
+     *  URL persisted on the account, then the in-memory cache, then the network. */
+    private void loadHostAvatar(Account account) {
+        if (ivDrawerAvatar == null) return;
+        if (account == null) {
+            ivDrawerAvatar.setImageResource(R.drawable.noavatar);
             return;
         }
-        String cached = TikTokAvatarResolver.cached(nickname);
+        if (account.avatarUrl != null && !account.avatarUrl.isEmpty()) {
+            Glide.with(this).load(account.avatarUrl).circleCrop().into(ivDrawerAvatar);
+            return;
+        }
+        String cached = TikTokAvatarResolver.cached(account.nickname);
         if (cached != null) {
             Glide.with(this).load(cached).circleCrop().into(ivDrawerAvatar);
             return;
         }
-        new TikTokAvatarResolver().resolve(nickname, new TikTokAvatarResolver.Callback() {
+        new TikTokAvatarResolver().resolve(account.nickname, new TikTokAvatarResolver.Callback() {
             @Override
             public void onUrl(String url) {
                 if (isDestroyed()) return;
                 Glide.with(MainActivity.this).load(url).circleCrop().into(ivDrawerAvatar);
+                persistAvatar(account.nickname, url);
             }
 
             @Override
             public void onError() {
                 // Keep the placeholder silhouette.
+            }
+        });
+    }
+
+    private void persistAvatar(String nickname, String url) {
+        AppDatabase.runInBackground(() -> {
+            try {
+                AccountDao dao = AppDatabase.get(MainActivity.this).accountDao();
+                Account account = dao.findByNickname(nickname);
+                if (account != null) {
+                    dao.updateAvatarUrl(account.id, url);
+                }
+            } catch (Exception ignored) {
             }
         });
     }
@@ -289,6 +311,7 @@ public class MainActivity extends AppCompatActivity {
                 connecting = false;
                 connectedHost = host;
                 setUiConnected(true, host);
+                refreshDrawerAccount();
                 break;
             case TikTokService.STATUS_DISCONNECTED:
                 boolean wasConnectedOrConnecting = connected || connecting;

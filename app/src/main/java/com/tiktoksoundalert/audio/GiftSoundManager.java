@@ -3,6 +3,7 @@ package com.tiktoksoundalert.audio;
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.net.Uri;
 import android.os.Build;
@@ -175,6 +176,45 @@ public class GiftSoundManager {
                 put("wow", 900L);
                 put("superchat", 1600L);
             }};
+
+    /**
+     * Expected playback length (ms) for a sound key. Built-in keys use the
+     * known rough duration; custom sounds are measured with a MediaPlayer
+     * (blocking — call from a background thread). Falls back to the default
+     * effect window when the duration cannot be read.
+     */
+    public static long durationOf(String soundKey, Context context) {
+        Long builtin = ISOLATED_DURATIONS.get(soundKey);
+        if (builtin != null) {
+            return builtin;
+        }
+        if (soundKey == null || context == null) {
+            return AudioMixCoordinator.defaultEffectMillis();
+        }
+        try {
+            com.tiktoksoundalert.GiftSoundStore store =
+                    new com.tiktoksoundalert.GiftSoundStore(context);
+            String path = store.getCustomSounds().get(soundKey);
+            if (path == null) {
+                return AudioMixCoordinator.defaultEffectMillis();
+            }
+            MediaPlayer player = new MediaPlayer();
+            try {
+                player.setDataSource(path);
+                player.prepare();
+                int ms = player.getDuration();
+                return ms > 0 ? ms : AudioMixCoordinator.defaultEffectMillis();
+            } finally {
+                try {
+                    player.release();
+                } catch (Exception ignored) {
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "durationOf failed for " + soundKey + ": " + e.getMessage());
+            return AudioMixCoordinator.defaultEffectMillis();
+        }
+    }
 
     public String[] getAvailableBuiltinSounds() {
         return BUILTIN_SOUNDS;

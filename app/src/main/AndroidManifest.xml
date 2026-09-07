@@ -64,6 +64,11 @@
             android:theme="@style/Theme.TikTokSoundAlertToolbar"
             android:parentActivityName=".ui.MainActivity" />
 
+        <activity
+            android:name=".ui.AboutActivity"
+            android:theme="@style/Theme.TikTokSoundAlertToolbarNoActionBar"
+            android:parentActivityName=".ui.MainActivity" />
+
         <service
             android:name=".service.TikTokService"
             android:foregroundServiceType="mediaPlayback"

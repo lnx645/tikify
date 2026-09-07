@@ -72,6 +72,13 @@ public final class SettingsRepository {
     public static final String KEY_ALERT_QUEUE_RULES = "alert_queue_rules";
     public static final String KEY_ALERT_INTERRUPTS_TTS = "alert_interrupts_tts";
 
+    // Alert queue delay: serialize alert sounds with a gap between them.
+    // KEY_ALERT_DELAY_MODE is "fixed" (seconds) or "duration" (next alert starts
+    // right when the previous audio finishes).
+    public static final String KEY_ALERT_DELAY_ENABLED = "alert_delay_enabled";
+    public static final String KEY_ALERT_DELAY_MODE = "alert_delay_mode";
+    public static final String KEY_ALERT_DELAY_SECONDS = "alert_delay_seconds";
+
     public static final String KEY_LOG_MAX_SIZE = "log_max_size";
     public static final String KEY_SHOW_NOTIFICATIONS = "show_notifications";
 

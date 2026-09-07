@@ -1,9 +1,11 @@
 package com.tiktoksoundalert.ui;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -13,12 +15,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.tiktoksoundalert.R;
 import com.tiktoksoundalert.db.Account;
 import com.tiktoksoundalert.db.AccountDao;
 import com.tiktoksoundalert.db.AppDatabase;
+import com.tiktoksoundalert.tiktok.TikTokAvatarResolver;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -173,13 +178,21 @@ public class AccountsActivity extends AppCompatActivity {
             Account account = items.get(position);
 
             boolean active = account.id == activeId;
-            holder.tvNickname.setText(account.nickname);
+            holder.tvNickname.setText("@" + account.nickname);
             holder.tvNickname.setTextColor(active
                     ? holder.itemView.getContext().getColor(R.color.primary)
                     : holder.itemView.getContext().getColor(R.color.text_primary));
             holder.tvStatus.setText(active
-                    ? "Active"
-                    : "Last used " + formatDate(account.lastUsedAt));
+                    ? "Aktif sekarang"
+                    : "Terakhir dipakai " + formatDate(account.lastUsedAt));
+
+            MaterialCardView card = (MaterialCardView) holder.itemView;
+            card.setStrokeColor(active
+                    ? holder.itemView.getContext().getColor(R.color.primary)
+                    : holder.itemView.getContext().getColor(R.color.disconnected_color));
+            card.setStrokeWidth(active ? 2 : 0);
+
+            loadAvatar(holder.ivAvatar, account);
 
             holder.btnUse.setVisibility(active ? View.INVISIBLE : View.VISIBLE);
             holder.itemView.setOnClickListener(v -> {
@@ -193,19 +206,57 @@ public class AccountsActivity extends AppCompatActivity {
             });
         }
 
+        /** Load a TikTok avatar for the account when available; keep the silhouette otherwise. */
+        private void loadAvatar(ImageView avatarView, Account account) {
+            if (account.avatarUrl != null && !account.avatarUrl.isEmpty()) {
+                Glide.with(avatarView.getContext()).load(account.avatarUrl).circleCrop().into(avatarView);
+                return;
+            }
+            String cached = TikTokAvatarResolver.cached(account.nickname);
+            if (cached != null) {
+                Glide.with(avatarView.getContext()).load(cached).circleCrop().into(avatarView);
+                return;
+            }
+            new TikTokAvatarResolver().resolve(account.nickname, new TikTokAvatarResolver.Callback() {
+                @Override
+                public void onUrl(String url) {
+                    Glide.with(avatarView.getContext()).load(url).circleCrop().into(avatarView);
+                    persistAvatar(avatarView.getContext(), account.nickname, url);
+                }
+
+                @Override
+                public void onError() {
+                    // Keep the placeholder silhouette.
+                }
+            });
+        }
+
+        private void persistAvatar(Context context, String nickname, String url) {
+            try {
+                AccountDao dao = AppDatabase.get(context.getApplicationContext()).accountDao();
+                Account account = dao.findByNickname(nickname);
+                if (account != null) {
+                    dao.updateAvatarUrl(account.id, url);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
         @Override
         public int getItemCount() {
             return items.size();
         }
 
         static class VH extends RecyclerView.ViewHolder {
+            final ImageView ivAvatar;
             final TextView tvNickname;
             final TextView tvStatus;
             final MaterialButton btnUse;
-            final MaterialButton btnDelete;
+            final ImageView btnDelete;
 
             VH(@NonNull View itemView) {
                 super(itemView);
+                ivAvatar = itemView.findViewById(R.id.iv_avatar);
                 tvNickname = itemView.findViewById(R.id.tv_nickname);
                 tvStatus = itemView.findViewById(R.id.tv_status);
                 btnUse = itemView.findViewById(R.id.btn_use);
@@ -215,7 +266,7 @@ public class AccountsActivity extends AppCompatActivity {
     }
 
     private static String formatDate(long millis) {
-        return new SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(new Date(millis));
+        return new SimpleDateFormat("d MMM, HH:mm", Locale.getDefault()).format(new Date(millis));
     }
 
     private void useAccount(Account account) {

@@ -21,6 +21,7 @@ import com.tiktoksoundalert.GiftSoundStore;
 import com.tiktoksoundalert.SettingsManager;
 import com.tiktoksoundalert.SettingsRepository;
 import com.tiktoksoundalert.TikTokSoundApp;
+import com.tiktoksoundalert.audio.AlertSoundQueue;
 import com.tiktoksoundalert.audio.GiftSoundManager;
 import com.tiktoksoundalert.audio.TtsScheduler;
 import com.tiktoksoundalert.db.AppDatabase;
@@ -35,6 +36,7 @@ import com.tiktoksoundalert.tiktok.models.TikTokErrorEvent;
 import com.tiktoksoundalert.tiktok.models.TikTokEvent;
 import com.tiktoksoundalert.tiktok.models.TikTokGiftEvent;
 import com.tiktoksoundalert.tiktok.TikTokLiveListener;
+import com.tiktoksoundalert.tiktok.TikTokAvatarResolver;
 import com.tiktoksoundalert.tiktok.TikTokRoomResolver;
 import com.tiktoksoundalert.tiktok.TikTokWebSocketClient;
 import com.tiktoksoundalert.ui.MainActivity;
@@ -66,6 +68,7 @@ public class TikTokService extends Service {
     private TikTokWebSocketClient webSocketClient;
     private TikTokRoomResolver roomResolver;
     private GiftSoundManager giftSoundManager;
+    private AlertSoundQueue alertQueue;
     private TtsScheduler ttsScheduler;
     private SettingsManager settingsManager;
 
@@ -143,6 +146,7 @@ public class TikTokService extends Service {
         broadcastManager = LocalBroadcastManager.getInstance(this);
         giftSoundStore = new GiftSoundStore(this);
         giftSoundManager = new GiftSoundManager(this);
+        alertQueue = new AlertSoundQueue(this, giftSoundManager);
 
         broadcastManager.registerReceiver(settingsReceiver,
                 new IntentFilter(SettingsRepository.ACTION_SETTINGS_CHANGED));
@@ -260,7 +264,7 @@ public class TikTokService extends Service {
                         ? PendingIntent.FLAG_IMMUTABLE : 0);
 
         Notification notification = new NotificationCompat.Builder(this, TikTokSoundApp.CHANNEL_ID_SERVICE)
-                .setContentTitle("TikTok Sound Alerts")
+                .setContentTitle("TIKIFY")
                 .setContentText(hostName != null ? "Connected to @" + hostName : "Not connected")
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentIntent(pendingIntent)
@@ -316,6 +320,11 @@ public class TikTokService extends Service {
             @Override
             public void onSuccess(TikTokRoomResolver.RoomInfo roomInfo) {
                 Log.d(TAG, "Room resolved - ID: " + roomInfo.roomId + " User: " + roomInfo.userId);
+                if (roomInfo.avatarUrl != null) {
+                    TikTokAvatarResolver.cache(roomInfo.hostName, roomInfo.avatarUrl);
+                    persistAvatar(roomInfo.hostName, roomInfo.avatarUrl);
+                }
+                Log.d(TAG, "Cached avatar URL for @" + roomInfo.hostName);
                 establishWebSocket(roomInfo);
             }
 
@@ -324,6 +333,22 @@ public class TikTokService extends Service {
                 Log.e(TAG, "Room resolution failed: " + error);
                 emitEvent(new TikTokErrorEvent(error));
                 emitStatus(STATUS_ERROR, error);
+            }
+        });
+    }
+
+    /** Persist the host avatar on the matching account so it survives app restarts. */
+    private void persistAvatar(final String host, final String avatarUrl) {
+        AppDatabase.runInBackground(() -> {
+            try {
+                com.tiktoksoundalert.db.Account account =
+                        AppDatabase.get(TikTokService.this).accountDao().findByNickname(host);
+                if (account != null) {
+                    AppDatabase.get(TikTokService.this).accountDao().updateAvatarUrl(account.id, avatarUrl);
+                    Log.d(TAG, "Persisted avatar URL for @" + host + " (account id " + account.id + ")");
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "persistAvatar failed: " + e.getMessage());
             }
         });
     }
@@ -432,6 +457,13 @@ public class TikTokService extends Service {
         if (!settingsManager.isGiftSoundEnabled()) return;
         if (!settingsManager.isAlertQueueEnabled()) return;
         if (rule == null || !rule.enabled || !rule.hasSound()) return;
+
+        if (alertQueue != null && settingsManager.isAlertDelayEnabled()) {
+            long gapMs = SettingsManager.DELAY_MODE_DURATION.equals(settingsManager.getAlertDelayMode())
+                    ? 0L : settingsManager.getAlertDelaySeconds() * 1000L;
+            alertQueue.enqueue(rule.sound, rule.volume, gapMs);
+            return;
+        }
 
         giftSoundManager.playSound(rule.sound, rule.volume);
     }
@@ -668,6 +700,7 @@ public class TikTokService extends Service {
             broadcastManager.unregisterReceiver(settingsReceiver);
         }
         if (giftSoundManager != null) giftSoundManager.release();
+        if (alertQueue != null) alertQueue.shutdown();
         if (ttsScheduler != null) ttsScheduler.shutdown();
         try {
             if (debugWriter != null) {

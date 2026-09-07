@@ -38,6 +38,7 @@ public class TikTokAvatarResolver {
             "&browser_platform=Win32&channel=tiktok_web&cookie_enabled=true" +
             "&region=US&priority_region=US&tz_name=America/New_York" +
             "&webcast_language=en&uniqueId=%s&sourceType=54";
+    private static final String PROFILE_URL = "https://www.tiktok.com/@%s";
 
     private static final int CACHE_MAX_ENTRIES = 24;
 
@@ -72,6 +73,15 @@ public class TikTokAvatarResolver {
     /** Returns the cached avatar URL for a nickname, or null if not fetched yet. */
     public synchronized static String cached(String nickname) {
         return nickname == null ? null : URL_CACHE.get(normalize(nickname));
+    }
+
+    /** Caches an avatar URL obtained elsewhere (e.g. from room resolution). */
+    public static void cache(String nickname, String avatarUrl) {
+        String key = normalize(nickname);
+        if (key == null || avatarUrl == null || avatarUrl.isEmpty()) return;
+        synchronized (TikTokAvatarResolver.class) {
+            URL_CACHE.put(key, avatarUrl);
+        }
     }
 
     /**
@@ -110,13 +120,58 @@ public class TikTokAvatarResolver {
 
     private String fetch(String nickname) {
         try {
-            String detail = tryUserDetail(nickname);
-            if (detail != null) return detail;
-            return tryLiveRoom(nickname);
+            String room = tryLiveRoom(nickname);
+            if (room != null) return room;
+            String profile = tryProfilePage(nickname);
+            if (profile != null) return profile;
+            return tryUserDetail(nickname);
         } catch (Exception e) {
             Log.w(TAG, "resolve failed for @" + nickname + ": " + e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Scrape the public profile page for an embedded avatar URL. Works even when
+     * the creator is not live and when the JSON APIs are bot-blocked, provided
+     * the HTML page is served (device mobile IPs usually are).
+     */
+    private String tryProfilePage(String nickname) {
+        String url = String.format(PROFILE_URL, nickname);
+        Request request = new Request.Builder()
+                .url(url)
+                .header("User-Agent", uaProvider.get())
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Referer", "https://www.tiktok.com/")
+                .get()
+                .build();
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful() || response.body() == null) return null;
+            String page = response.body().string();
+            if (page == null || page.length() < 500) return null;
+            String[] patterns = {
+                    "\"avatarLarger\"\\s*:\\s*\"([^\"]+)\"",
+                    "\"avatarMedium\"\\s*:\\s*\"([^\"]+)\"",
+                    "\"avatarThumb\"\\s*:\\s*\"([^\"]+)\"",
+                    "\"avatarUrl\"\\s*:\\s*\"([^\"]+)\""
+            };
+            for (String pattern : patterns) {
+                String match = firstMatch(page, pattern);
+                if (match != null && !match.isEmpty() && match.contains("http")) {
+                    Log.d(TAG, "profile page avatar for @" + nickname);
+                    return match.replace("\\u002F", "/").replace("\\/", "/");
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            Log.w(TAG, "profile page failed: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private static String firstMatch(String text, String regex) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(regex).matcher(text);
+        return m.find() ? m.group(1) : null;
     }
 
     private String tryUserDetail(String nickname) {

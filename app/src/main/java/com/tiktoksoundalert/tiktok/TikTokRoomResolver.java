@@ -56,6 +56,7 @@ public class TikTokRoomResolver {
         public String hostName;
         public String userId;
         public boolean isLive;
+        public String avatarUrl;
     }
 
     public void resolveRoom(final String hostName, final RoomInfoCallback callback) {
@@ -117,6 +118,10 @@ public class TikTokRoomResolver {
             }
             String roomId = user.optString("roomId", "");
             String userId = user.optString("id", "");
+            String avatarUrl = firstNonEmpty(
+                    user.optString("avatarLarger", ""),
+                    user.optString("avatarMedium", ""),
+                    user.optString("avatarThumb", ""));
             if (roomId == null || roomId.isEmpty()) {
                 return null;
             }
@@ -126,7 +131,8 @@ public class TikTokRoomResolver {
             info.userId = userId;
             info.hostName = host;
             info.isLive = true;
-            Log.d(TAG, "Resolved (api) userId=" + userId + " roomId=" + roomId + " for @" + host);
+            info.avatarUrl = (avatarUrl != null && !avatarUrl.isEmpty()) ? avatarUrl : null;
+            Log.d(TAG, "Resolved (api) userId=" + userId + " roomId=" + roomId + " avatar=" + info.avatarUrl + " for @" + host);
             return info;
         } catch (Exception e) {
             Log.w(TAG, "api-live failed: " + e.getMessage());
@@ -177,6 +183,13 @@ public class TikTokRoomResolver {
     private String firstMatch(String text, String regex) {
         java.util.regex.Matcher m = java.util.regex.Pattern.compile(regex).matcher(text);
         return m.find() ? m.group(1) : null;
+    }
+
+    private static String firstNonEmpty(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isEmpty()) return value;
+        }
+        return null;
     }
 
     private String userIdBeforeRoomId(String page, String roomId) {
