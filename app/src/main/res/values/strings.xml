@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TikTok Sound Alerts</string>
+    <string name="app_title">TikTok Sound Alerts</string>
+    <string name="hint_hostname">TikTok username</string>
+    <string name="btn_connect">Connect</string>
+    <string name="btn_stop">Stop</string>
+    <string name="label_status">Connection Status</string>
+    <string name="status_not_connected">Not Connected</string>
+    <string name="label_event_log">Live Event Log</string>
+
+    <string name="tts_speed">Kecepatan</string>
+    <string name="tts_pitch">Nada (Pitch)</string>
+    <string name="tts_volume">Volume</string>
+    <string name="tts_preview">Preview Suara</string>
+    <string name="tts_cooldown">Cooldown antar pesan (detik)</string>
+    <string name="tts_max_queue">Panjang antrian (max)</string>
+    <string name="tts_max_length">Panjang maksimal komentar (karakter)</string>
+    <string name="tts_letter_spam">Blokir spam huruf (mis. "aaaaaaaa")</string>
+    <string name="tts_once_per_user">Baca sekali per user (pesan berikutnya dari user yang sama dilewati)</string>
+    <string name="tts_banned_words">Kata Terlarang (banned)</string>
+    <string name="tts_priority_words">Kata Prioritas (langsung dibaca)</string>
+    <string name="tts_template_hint">Template teks</string>
+    <string name="tts_template_default">{username} Berkomentar {comment}</string>
+    <string name="tts_favorite_users">Daftar User Favorit</string>
+    <string name="tts_gift_enabled">Baca pengumuman gift (TTS)</string>
+    <string name="tts_gift_template_hint">Template teks gift</string>
+    <string name="tts_gift_template_default">{username} Mengirim {giftname}</string>
+    <string name="tts_gift_min_diamonds">Minimal diamond untuk dibaca</string>
+
+    <string-array name="sound_names">
+        <item>Ding</item>
+        <item>Cheer</item>
+        <item>Airhorn</item>
+        <item>Boom</item>
+        <item>Coin</item>
+        <item>Fanfare</item>
+        <item>Harp</item>
+        <item>Level Up</item>
+        <item>Pop</item>
+        <item>Sparkle</item>
+        <item>Drumroll</item>
+        <item>Trumpet</item>
+        <item>Woohoo</item>
+        <item>Wow</item>
+        <item>Superchat</item>
+    </string-array>
+
+    <string-array name="sound_keys">
+        <item>ding</item>
+        <item>cheer</item>
+        <item>airhorn</item>
+        <item>boom</item>
+        <item>coin</item>
+        <item>fanfare</item>
+        <item>harp</item>
+        <item>levelup</item>
+        <item>pop</item>
+        <item>sparkle</item>
+        <item>drumroll</item>
+        <item>trumpet</item>
+        <item>woohoo</item>
+        <item>wow</item>
+        <item>superchat</item>
+    </string-array>
+
+    <string-array name="language_names">
+        <item>Indonesian</item>
+        <item>English</item>
+        <item>Malay</item>
+        <item>Japanese</item>
+        <item>Korean</item>
+        <item>Chinese</item>
+        <item>Spanish</item>
+        <item>Portuguese</item>
+        <item>Thai</item>
+        <item>Vietnamese</item>
+    </string-array>
+
+    <string-array name="language_codes">
+        <item>id</item>
+        <item>en</item>
+        <item>ms</item>
+        <item>ja</item>
+        <item>ko</item>
+        <item>zh</item>
+        <item>es</item>
+        <item>pt</item>
+        <item>th</item>
+        <item>vi</item>
+    </string-array>
+
+    <string name="alert_row_subtitle">%1$s · Volume %2$d%%</string>
+</resources>

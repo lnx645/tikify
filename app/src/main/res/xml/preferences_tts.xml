@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory android:title="Text-to-Speech">
+
+        <SwitchPreferenceCompat
+            android:key="tts_enabled"
+            android:title="Read comments aloud"
+            android:summary="Use text-to-speech to read comments"
+            android:defaultValue="true" />
+
+        <ListPreference
+            android:key="tts_language"
+            android:title="TTS Language"
+            android:summary="Language used for text-to-speech"
+            android:defaultValue="id"
+            android:dependency="tts_enabled"
+            android:entries="@array/language_names"
+            android:entryValues="@array/language_codes" />
+
+        <SeekBarPreference
+            android:key="tts_speed"
+            android:title="Speech speed"
+            android:summary="Adjust how fast comments are read"
+            android:defaultValue="10"
+            android:max="20"
+            app:showSeekBarValue="true"
+            android:dependency="tts_enabled" />
+
+        <SeekBarPreference
+            android:key="tts_pitch"
+            android:title="Speech pitch"
+            android:summary="Adjust the pitch of the voice"
+            android:defaultValue="10"
+            android:max="20"
+            app:showSeekBarValue="true"
+            android:dependency="tts_enabled" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Announce Username">
+        <SwitchPreferenceCompat
+            android:key="tts_announce_username"
+            android:title="Announce username"
+            android:summary="Say the username before reading the comment"
+            android:defaultValue="true"
+            android:dependency="tts_enabled" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Comment Filters">
+        <EditTextPreference
+            android:key="tts_min_length"
+            android:title="Minimum comment length"
+            android:summary="Comments shorter than this are not read (0 for none)"
+            android:defaultValue="0"
+            android:dependency="tts_enabled" />
+
+        <EditTextPreference
+            android:key="tts_max_length"
+            android:title="Maximum comment length"
+            android:summary="Comments longer than this are not read"
+            android:defaultValue="200"
+            android:dependency="tts_enabled" />
+
+        <EditTextPreference
+            android:key="tts_blocked_words"
+            android:title="Blocked words"
+            android:summary="Comments containing these words will not be read (comma-separated)"
+            android:dependency="tts_enabled" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="gift_color">#FFEB3B</color>
+    <color name="comment_color">#4FC3F7</color>
+    <color name="like_color">#EF5350</color>
+    <color name="follow_color">#66BB6A</color>
+    <color name="share_color">#AB47BC</color>
+    <color name="join_color">#FFA726</color>
+    <color name="error_color">#EF5350</color>
+    <color name="connected_color">#66BB6A</color>
+    <color name="disconnected_color">#9E9E9E</color>
+    <color name="default_color">#B0BEC5</color>
+
+    <color name="text_primary">#DE000000</color>
+    <color name="text_secondary">#99000000</color>
+    <color name="background">#FFFFFF</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="on_background">#FF000000</color>
+    <color name="on_surface">#FF000000</color>
+    <color name="primary">#FF6200EE</color>
+    <color name="on_primary">#FFFFFFFF</color>
+    <color name="primary_variant">#FF3700B3</color>
+    <color name="secondary">#FF03DAC5</color>
+
+    <color name="nav_item_inactive">#9E9E9E</color>
+    <color name="nav_item_active">#FF6200EE</color>
+</resources>

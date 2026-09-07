@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory android:title="Gift Sounds">
+
+        <SwitchPreferenceCompat
+            android:key="gift_sound_enabled"
+            android:title="Enable gift sounds"
+            android:summary="Play a sound when someone sends a gift"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            android:key="gift_sound_all_gifts"
+            android:title="Use sound for all gifts"
+            android:summary="Play the selected sound for every gift"
+            android:defaultValue="true"
+            android:dependency="gift_sound_enabled" />
+
+        <ListPreference
+            android:key="gift_default_sound"
+            android:title="Default gift sound"
+            android:summary="Sound played when a gift is received"
+            android:defaultValue="ding"
+            android:dependency="gift_sound_enabled"
+            android:entries="@array/sound_names"
+            android:entryValues="@array/sound_keys" />
+
+        <SeekBarPreference
+            android:key="gift_volume"
+            android:title="Gift sound volume"
+            android:summary="Adjust the volume of gift notification sounds"
+            android:defaultValue="80"
+            android:max="100"
+            app:showSeekBarValue="true"
+            android:dependency="gift_sound_enabled" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Other Alerts">
+
+        <SwitchPreferenceCompat
+            android:key="follow_sound_enabled"
+            android:title="Follow sound"
+            android:summary="Play a sound when someone follows"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            android:key="subscribe_sound_enabled"
+            android:title="Subscribe sound"
+            android:summary="Play a sound when someone subscribes"
+            android:defaultValue="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Custom Sounds">
+        <Preference
+            android:key="upload_gift_sound"
+            android:title="Upload custom gift sound"
+            android:summary="Choose an audio file from your device"
+            android:icon="@drawable/ic_upload" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

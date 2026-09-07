@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory android:title="Connection">
+
+        <SwitchPreferenceCompat
+            android:key="show_notifications"
+            android:title="Show notifications"
+            android:summary="Show gift and comment notifications"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            android:key="join_sound_enabled"
+            android:title="Join sound"
+            android:summary="Play a sound when someone joins"
+            android:defaultValue="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Open Settings">
+        <Preference
+            android:key="open_gift_settings"
+            android:title="Gift Sound Settings"
+            android:summary="Configure gift notification sounds" />
+        <Preference
+            android:key="open_tts_settings"
+            android:title="Comment Text-to-Speech"
+            android:summary="Configure how comments are read aloud" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="About">
+        <Preference
+            android:key="version"
+            android:title="Version"
+            android:summary="1.0.0" />
+    </PreferenceCategory>
+
+</PreferenceScreen>
