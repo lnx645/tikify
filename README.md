@@ -1,46 +1,39 @@
-# Tikify - Asisten Live TikTok Interaktif Anda 🚀
+# Tikify - Asisten Live TikTok Interaktif & Monitor Views 🚀
 
-**Tikify** adalah aplikasi Android inovatif yang dirancang khusus untuk para *streamer* TikTok yang ingin mengubah siaran langsung (LIVE) menjadi lebih interaktif, seru, dan menghasilkan lebih banyak cuan! Sama seperti TikFinity di PC, Tikify membawa seluruh fitur interaksi otomatis langsung ke dalam genggaman *smartphone* Android Anda.
+**Tikify** adalah aplikasi Android ringkas yang dirancang khusus untuk para *streamer* TikTok yang ingin siaran langsung (LIVE) mereka lebih interaktif dan mudah dipantau. Tanpa perlu *overlay* visual yang rumit, Tikify berfokus penuh pada respons suara otomatis (*Alerts* & *TTS*) serta pemantauan jumlah penonton secara langsung dari HP Android Anda.
 
-Ubah penonton pasif menjadi aktif dengan memberikan respons instan setiap kali mereka berinteraksi dalam LIVE Anda!
+Jadikan LIVE Anda lebih hidup dan interaktif tanpa membebani performa layar *smartphone* Anda!
 
 ---
 
 ## 🌟 Fitur Utama
 
-### 🎙️ Text-to-Speech (TTS) Otomatis
-* Jangan lewatkan pesan penting! Tikify akan membacakan komentar penonton, pesan donasi, atau nama pemberi *gift* secara otomatis dengan suara yang natural.
+### 🎙️ Text-to-Speech (TTS) Komentar & Gift
+* Ubah komentar penonton, pesan donasi, atau nama pemberi *gift* menjadi suara otomatis secara *real-time*. Anda tetap bisa berinteraksi dengan penonton tanpa harus terus-menerus menatap layar obrolan.
 
-### 🎵 Pemberitahuan Suara & Efek Instan (Sound Alerts)
-* Atur efek suara unik (seperti suara meme, tepuk tangan, atau sirine) yang akan terpicu secara otomatis setiap kali Anda menerima *Like*, *Follow*, *Share*, atau *Gift* tertentu.
+### 🎵 Pemberitahuan Suara Otomatis (Sound Alerts)
+* Pemicu efek suara unik (seperti suara meme, bel, atau sirine) secara instan setiap kali Anda menerima *Like*, *Follow*, *Share*, atau *Gift* tertentu. Sangat ampuh untuk memicu penonton memberikan lebih banyak *gift*!
 
-### 🖼️ Overlay Interaktif untuk Live Stream
-* Tampilkan *Goal Bar* (target *gift*/*follower*), papan peringkat penonton teraktif (*Leaderboard*), dan animasi seru langsung di layar siaran Anda untuk memicu kompetisi antar penonton.
-
-### ⚡ Respons Otomatis & Bot Obrolan
-* Kirim pesan sambutan otomatis kepada penonton baru yang masuk atau berikan ucapan terima kasih instan setiap kali ada yang memberikan *gift*.
-
-### 🎮 Kontrol Game Interaktif (Mobile Gaming)
-* Hubungkan interaksi penonton langsung ke game yang sedang Anda mainkan di Android. Biarkan penonton memicu aksi di dalam game menggunakan *gift*!
+### 👁️ Pantau Jumlah Penonton Langsung (Live Views Monitor)
+* Pantau statistik jumlah penonton (*views*) secara akurat dan *real-time*. Dapatkan notifikasi suara atau tanda khusus saat jumlah penonton LIVE Anda mencapai target tertentu.
 
 ---
 
 ## 🔥 Mengapa Memilih Tikify?
 
-* **Khusus Android:** Tidak perlu PC mahal atau OBS Studio yang rumit. Cukup jalankan dari HP Android Anda.
-* **Ringan & Hemat Baterai:** Dioptimalkan untuk berjalan di latar belakang tanpa mengganggu performa game yang sedang Anda mainkan.
-* **Pengaturan Instan:** Hubungkan dengan akun TikTok Anda hanya dalam hitungan detik secara aman.
-* **Meningkatkan Pendapatan:** Fitur interaktif yang terbukti memicu penonton untuk memberikan lebih banyak *gift* dan *koin*.
+* **Ringan & Tanpa Overlay Layar:** Tanpa elemen visual tambahan yang menutupi layar, sehingga sangat hemat baterai, hemat RAM, dan tidak mengganggu performa saat Anda bermain game *mobile*.
+* **Fokus pada Audio:** Mengandalkan sistem audio cerdas (TTS dan efek suara) agar Anda bisa tetap fokus pada konten LIVE atau permainan Anda.
+* **Pengaturan Instan & Aman:** Hubungkan dengan akun TikTok Anda hanya dalam hitungan detik menggunakan *username* tanpa memerlukan kata sandi.
 
 ---
 
 ## 🛠️ Cara Memulai
 
 1. **Unduh** dan pasang aplikasi Tikify di perangkat Android Anda.
-2. **Masukkan Username** TikTok Anda (Tidak memerlukan kata sandi).
-3. **Atur Fitur** sesuai keinginan (pilih suara TTS, efek suara *gift*, atau tampilan overlay).
-4. Klik **"Mulai Asisten"** dan buka aplikasi TikTok Anda untuk memulai LIVE seperti biasa!
+2. **Masukkan Username** TikTok Anda untuk menghubungkan ruang LIVE.
+3. **Aktifkan Fitur** yang Anda butuhkan (pilih suara TTS, atur efek suara *gift*, atau aktifkan pelacak penonton).
+4. Klik **"Mulai Asisten"** dan mulailah siaran langsung di TikTok seperti biasa!
 
 ---
 
-🗣️ *Catatan: Aplikasi ini dikembangkan secara independen dan tidak berafiliasi langsung dengan TikTok Inc.*
+🗣️ *Catatan: Aplikasi ini dikembangkan secara independen untuk membantu kreator dan tidak berafiliasi langsung dengan TikTok Inc.*
