@@ -27,13 +27,15 @@ Jadikan LIVE Anda lebih hidup dan interaktif tanpa membebani performa layar *sma
 
 ---
 
-## 🛠️ Cara Memulai
+## 🛠️ Cara Memulai & Unduh
 
-1. **Unduh** dan pasang aplikasi Tikify di perangkat Android Anda.
-2. **Masukkan Username** TikTok Anda untuk menghubungkan ruang LIVE.
-3. **Aktifkan Fitur** yang Anda butuhkan (pilih suara TTS, atur efek suara *gift*, atau aktifkan pelacak penonton).
-4. Klik **"Mulai Asisten"** dan mulailah siaran langsung di TikTok seperti biasa!
+1. **Unduh Aplikasi:** Klik tautan resmi berikut untuk mengunduh berkas APK langsung ke HP Anda:
+   👉 [**Download Tikify APK Terbaru**](https://github.com/lnx645/tikify/releases/download/release/app-release-unsigned.apk)
+2. **Instal APK:** Buka berkas yang telah diunduh dan izinkan instalasi dari sumber tidak dikenal jika diminta oleh sistem Android Anda.
+3. **Hubungkan Akun:** Masukkan *username* TikTok Anda untuk menyambungkan ruang LIVE.
+4. **Aktifkan Fitur:** Atur suara TTS, efek suara *gift*, atau aktifkan pelacak penonton sesuai kebutuhan Anda.
+5. Klik **"Mulai Asisten"** dan mulailah siaran langsung di TikTok seperti biasa!
 
 ---
 
-🗣️ *Catatan: Aplikasi ini dikembangkan secara independen untuk membantu kreator dan tidak berafiliasi langsung dengan TikTok Inc.*
+🗣️ *Catatan: Berkas APK di atas merupakan versi unsigned release resmi dari repositori GitHub lnx645. Aplikasi ini dikembangkan secara independen untuk membantu kreator dan tidak berafiliasi langsung dengan TikTok Inc.*
