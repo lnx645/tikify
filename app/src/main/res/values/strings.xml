@@ -116,4 +116,18 @@
     <string name="trigger_guide_btn">Panduan lengkap &amp; contoh</string>
     <string name="trigger_guide_title">Panduan Trigger Custom</string>
     <string name="trigger_full_guide">Setelah memilih tombol \"Custom\" di halaman TTS, tambahkan trigger lewat kolom di atas, lalu pilih mode pencocokan. Komentar yang cocok akan dibaca suara; yang tidak cocok dilewati.\n\nPILIH MODE PENCOCOKAN\nKomentar dibaca bila memenuhi mode berikut:\n1) Sama Persis - komentar harus sama persis.\n   Trigger: halo → cocok \"halo\" dan \"Halo\".\n   Tidak cocok: \"halo semua\".\n\n2) Diawali (prefix) - komentar dimulai trigger. Awalan trigger dibuang sebelum dibaca.\n   Trigger: ! → \"!gift 10\" dibaca \"gift 10\".\n   Trigger: hbd → \"hbd rina\" dibaca \"rina\".\n   \"rina hbd\" tidak cocok.\n\n3) Mengandung - trigger ada di mana pun.\n   Trigger: gemoy → \"kucing gemoy\" dan \"gemoy banget\" cocok.\n\n4) Diakhiri (suffix) - komentar diakhiri trigger.\n   Trigger: gacor → \"suaranya gacor\" cocok.\n\n5) Kata Utuh - trigger sebagai kata utuh, dipisah spasi/tanda baca.\n   Trigger: gift → \"ada gift nih\" cocok; \"gifts\" tidak.\n\n6) Regex - pola regex Java. Cukup pilih mode Regex di atas. Cocok bila pola ditemukan di mana pun dalam komentar.\n\nCONTOH REGEX UNTUK LIVE:\n  ^!            komentar diawali !  → \"!gift\", \"!join\"\n  !gift|!share  memuat \"!gift\" ATAU \"!share\"\n  (hbd|ultah)   memuat \"hbd\" atau \"ultah\"\n  \\$\\d+         angka setelah tanda $ → \"harga $50\"\n  \\bgift\\b      kata \"gift\" utuh\n  ^\\d+\\.        diawali angka lalu titik → \"1. tolong\"\n  \\d{4,}        angka 4 digit atau lebih\n\nSIMPOL REGEX DASAR:\n  ^  awal teks        $  akhir teks\n  .  karakter apa pun (titik literal tulis \\.)\n  *  0 kali atau lebih\n  +  1 kali atau lebih\n  ?  0 atau 1 kali\n  [abc]  salah satu huruf;  [a-z] rentang\n  [^x]   bukan x\n  |  atau\n  ( )  kelompok\n  \\b  batas kata      \\d  digit      \\s  spasi\n  {2}  tepat 2 kali    {2,}  minimal 2 kali\n\nCATATAN:\n• Huruf besar/kecil diabaikan otomatis.\n• Regex yang salah tidak membuat aplikasi error, hanya tidak cocok.\n• Saat mode Regex aktif, trigger disimpan apa adanya (huruf besar dipertahankan).</string>
+    <string name="bug_report_title">Report Bug</string>
+    <string name="bug_report_saved_title">Ada error yang terdeteksi</string>
+    <string name="bug_report_no_report_title">Tidak ada laporan tersimpan</string>
+    <string name="bug_report_desc">Aplikasi mendeteksi error dan menutup tiba-tiba. Laporan di bawah dikirim ke pengembang saat Anda menekan tombol kirim.</string>
+    <string name="bug_report_no_report_body">Belum ada laporan error yang tersimpan.\n\nJika aplikasi pernah tertutup mendadak, halaman ini akan otomatis terbuka dengan membawa detail error-nya. Tekan "Laporkan ke Developer" untuk mengirim ke pengembang.</string>
+    <string name="bug_report_hint">Detail error akan muncul di sini...</string>
+    <string name="bug_report_email_hint">Laporan dikirim via email ke dadanhidyt@gmail.com</string>
+    <string name="bug_send">Laporkan ke Developer</string>
+    <string name="bug_copy">Salin Laporan</string>
+    <string name="bug_close">Tutup</string>
+    <string name="bug_report_copied">Laporan disalin</string>
+    <string name="bug_report_email_subject">Laporan Bug TIKIFY v%1$s (build %2$d)</string>
+    <string name="bug_report_chooser">Kirim laporan via email</string>
+    <string name="bug_report_no_email_app">Tidak ada aplikasi email yang terpasang</string>
 </resources>

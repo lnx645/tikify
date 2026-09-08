@@ -171,6 +171,8 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         } else if (id == R.id.nav_about) {
             startActivity(new Intent(this, AboutActivity.class));
+        } else if (id == R.id.nav_report_bug) {
+            startActivity(new Intent(this, ReportBugActivity.class));
         }
         return true;
     }

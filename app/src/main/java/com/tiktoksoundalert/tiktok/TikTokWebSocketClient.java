@@ -8,6 +8,7 @@ import com.tiktoksoundalert.tiktok.models.TikTokEvent;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -49,6 +50,12 @@ public class TikTokWebSocketClient {
      *  the room is not a live stream - fail fast instead of waiting. */
     private static final long INITIAL_DATA_GRACE_MS = 15_000;
     private static final long RECONNECT_DELAY_MS = 5_000;
+    /** Reuse a previously fetched euler route for this long (saves euler requests on reconnects). */
+    private static final long ROUTE_TTL_MS = 60_000;
+    /** If euler answers 429 (rate limit), wait at least this long before asking again. */
+    private static final long RATE_LIMIT_BACKOFF_MS = 60_000;
+    /** Cap on the adaptive reconnect delay after repeated failures. */
+    private static final long MAX_RECONNECT_DELAY_MS = 120_000;
 
     /** Reason reported to the listener when the watchdog decides the live is gone. */
     public static final String REASON_STREAM_ENDED = "Stream ended";
@@ -107,6 +114,23 @@ public class TikTokWebSocketClient {
     private volatile boolean stopped = false;
     private volatile boolean connected = false;
     private volatile long lastFrameTime = 0;
+    /** Until this time, euler told us to back off (rate limit). */
+    private volatile long rateLimitedUntilMs = 0;
+    /** Consecutive failed sign-fetches, for adaptive reconnect delay. */
+    private volatile int fetchFailures = 0;
+
+    /** Last good route per room, so a reconnect doesn't re-mint with euler. */
+    private static final class Route {
+        final String pushServer, wrss, cookie;
+        final long fetchedAt;
+        Route(String pushServer, String wrss, String cookie) {
+            this.pushServer = pushServer;
+            this.wrss = wrss;
+            this.cookie = cookie;
+            this.fetchedAt = System.currentTimeMillis();
+        }
+    }
+    private final Map<String, Route> routeCache = new HashMap<>();
     /** Last time a real (non-heartbeat) data frame arrived. */
     private volatile long lastEventTime = 0;
     /** When the socket was last opened; used to fail fast on joined-but-dead rooms. */
@@ -141,6 +165,7 @@ public class TikTokWebSocketClient {
                 connectSigned(roomId);
             } catch (Exception e) {
                 Log.e(TAG, "Connect failed", e);
+                fetchFailures++;
                 notifyError(new RuntimeException("Connect failed: " + e.getMessage()));
                 scheduleReconnect();
             }
@@ -176,8 +201,18 @@ public class TikTokWebSocketClient {
     private void scheduleReconnect() {
         if (stopped || !reconnectOnClose) return;
         reconnectHandler.removeCallbacks(reconnectRunnable);
-        reconnectHandler.postDelayed(reconnectRunnable, RECONNECT_DELAY_MS);
-        Log.d(TAG, "Scheduling auto-reconnect in " + RECONNECT_DELAY_MS + "ms");
+        long delay = RECONNECT_DELAY_MS;
+        long now = System.currentTimeMillis();
+        if (now < rateLimitedUntilMs) {
+            // Rate limited: don't hammer euler, wait out the backoff window.
+            delay = Math.max(delay, rateLimitedUntilMs - now);
+        } else if (fetchFailures > 1) {
+            // Adaptive backoff after repeated failures (capped).
+            delay = Math.min(MAX_RECONNECT_DELAY_MS,
+                    RECONNECT_DELAY_MS * (1L << Math.min(fetchFailures - 1, 5)));
+        }
+        reconnectHandler.postDelayed(reconnectRunnable, delay);
+        Log.d(TAG, "Scheduling auto-reconnect in " + delay + "ms");
     }
 
     public boolean isConnected() {
@@ -187,6 +222,17 @@ public class TikTokWebSocketClient {
     // ---- connection setup ----
 
     private void connectSigned(String room) throws Exception {
+        // Reuse the last good route for a short window instead of re-minting
+        // with euler on every reconnect (saves requests, dodges the rate limit).
+        Route cached = routeCache.get(room);
+        if (cached != null
+                && System.currentTimeMillis() - cached.fetchedAt < ROUTE_TTL_MS) {
+            Log.d(TAG, "Reusing cached route for room " + room);
+            openSocket(buildWsUrl(cached.pushServer, cached.wrss, room),
+                    "tt-target-idc=useast1a; " + cached.cookie + ";", room);
+            return;
+        }
+
         String signUrl = SIGN_FETCH_URL
                 + "&room_id=" + room
                 + "&user_agent=" + URLEncoder.encode(USER_AGENT, "UTF-8")
@@ -206,6 +252,11 @@ public class TikTokWebSocketClient {
         String wrss = null;
         try (Response resp = httpClient.newCall(fetchReq).execute()) {
             if (!resp.isSuccessful()) {
+                if (resp.code() == 429) {
+                    rateLimitedUntilMs = System.currentTimeMillis() + RATE_LIMIT_BACKOFF_MS;
+                    throw new IllegalStateException(
+                            "Sign server rate-limited (HTTP 429), backing off " + RATE_LIMIT_BACKOFF_MS / 1000 + "s");
+                }
                 throw new IllegalStateException("Sign server HTTP " + resp.code());
             }
             byte[] body = resp.body() != null ? resp.body().bytes() : new byte[0];
@@ -231,6 +282,9 @@ public class TikTokWebSocketClient {
         if (pushServer == null || pushServer.isEmpty() || wrss == null || wrss.isEmpty()) {
             throw new IllegalStateException("Sign server did not return a usable route (stream offline?)");
         }
+
+        fetchFailures = 0;
+        routeCache.put(room, new Route(pushServer, wrss, cookie));
 
         String wsUrl = buildWsUrl(pushServer, wrss, room);
         String cookieStr = "tt-target-idc=useast1a; " + cookie + ";";
@@ -332,6 +386,8 @@ public class TikTokWebSocketClient {
                 hbHandler.removeCallbacks(hbRunnable);
                 staleHandler.removeCallbacks(staleCheck);
                 Log.e(TAG, "failure", t);
+                // The cached route may be stale; force a fresh mint next time.
+                if (roomId != null) routeCache.remove(roomId);
                 notifyError(new RuntimeException("WebSocket error: " + t.getMessage()));
                 scheduleReconnect();
             }
