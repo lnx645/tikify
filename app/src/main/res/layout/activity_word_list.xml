@@ -30,6 +30,59 @@
             android:text="Tambah" />
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/row_match_mode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="8dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Mode pencocokan"
+            android:textColor="@color/text_secondary" />
+
+        <Spinner
+            android:id="@+id/spinner_match_mode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="180dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/row_trigger_switches"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/sw_trigger_enabled"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="4dp"
+            android:text="Aktifkan Custom Rule" />
+
+        <TextView
+            android:id="@+id/tv_match_guide"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_full_guide"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/trigger_guide_btn" />
+    </LinearLayout>
+
     <TextView
         android:id="@+id/tv_empty"
         android:layout_width="match_parent"

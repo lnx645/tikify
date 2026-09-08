@@ -17,6 +17,7 @@
     <string name="tts_max_queue">Panjang antrian (max)</string>
     <string name="tts_max_length">Panjang maksimal komentar (karakter)</string>
     <string name="tts_letter_spam">Blokir spam huruf (mis. "aaaaaaaa")</string>
+    <string name="tts_allow_empty">Baca komentar kosong (mis. "." atau emoji)</string>
     <string name="tts_once_per_user">Baca sekali per user (pesan berikutnya dari user yang sama dilewati)</string>
     <string name="tts_banned_words">Kata Terlarang (banned)</string>
     <string name="tts_priority_words">Kata Prioritas (langsung dibaca)</string>
@@ -91,4 +92,28 @@
     </string-array>
 
     <string name="alert_row_subtitle">%1$s · Volume %2$d%%</string>
+
+    <string-array name="trigger_match_labels">
+        <item>Diawali (prefix)</item>
+        <item>Sama Persis</item>
+        <item>Mengandung</item>
+        <item>Diakhiri (suffix)</item>
+        <item>Kata Utuh</item>
+        <item>Regex</item>
+    </string-array>
+
+    <string-array name="trigger_match_values">
+        <item>starts</item>
+        <item>exact</item>
+        <item>contains</item>
+        <item>ends</item>
+        <item>word</item>
+        <item>regex</item>
+    </string-array>
+
+    <string name="trigger_match_guide">Cara cepat: komentar yang cocok dengan salah satu trigger akan dibaca, sisanya dilewati. Semua pencocokan mengabaikan huruf besar/kecil.</string>
+
+    <string name="trigger_guide_btn">Panduan lengkap &amp; contoh</string>
+    <string name="trigger_guide_title">Panduan Trigger Custom</string>
+    <string name="trigger_full_guide">Setelah memilih tombol \"Custom\" di halaman TTS, tambahkan trigger lewat kolom di atas, lalu pilih mode pencocokan. Komentar yang cocok akan dibaca suara; yang tidak cocok dilewati.\n\nPILIH MODE PENCOCOKAN\nKomentar dibaca bila memenuhi mode berikut:\n1) Sama Persis - komentar harus sama persis.\n   Trigger: halo → cocok \"halo\" dan \"Halo\".\n   Tidak cocok: \"halo semua\".\n\n2) Diawali (prefix) - komentar dimulai trigger. Awalan trigger dibuang sebelum dibaca.\n   Trigger: ! → \"!gift 10\" dibaca \"gift 10\".\n   Trigger: hbd → \"hbd rina\" dibaca \"rina\".\n   \"rina hbd\" tidak cocok.\n\n3) Mengandung - trigger ada di mana pun.\n   Trigger: gemoy → \"kucing gemoy\" dan \"gemoy banget\" cocok.\n\n4) Diakhiri (suffix) - komentar diakhiri trigger.\n   Trigger: gacor → \"suaranya gacor\" cocok.\n\n5) Kata Utuh - trigger sebagai kata utuh, dipisah spasi/tanda baca.\n   Trigger: gift → \"ada gift nih\" cocok; \"gifts\" tidak.\n\n6) Regex - pola regex Java. Cukup pilih mode Regex di atas. Cocok bila pola ditemukan di mana pun dalam komentar.\n\nCONTOH REGEX UNTUK LIVE:\n  ^!            komentar diawali !  → \"!gift\", \"!join\"\n  !gift|!share  memuat \"!gift\" ATAU \"!share\"\n  (hbd|ultah)   memuat \"hbd\" atau \"ultah\"\n  \\$\\d+         angka setelah tanda $ → \"harga $50\"\n  \\bgift\\b      kata \"gift\" utuh\n  ^\\d+\\.        diawali angka lalu titik → \"1. tolong\"\n  \\d{4,}        angka 4 digit atau lebih\n\nSIMPOL REGEX DASAR:\n  ^  awal teks        $  akhir teks\n  .  karakter apa pun (titik literal tulis \\.)\n  *  0 kali atau lebih\n  +  1 kali atau lebih\n  ?  0 atau 1 kali\n  [abc]  salah satu huruf;  [a-z] rentang\n  [^x]   bukan x\n  |  atau\n  ( )  kelompok\n  \\b  batas kata      \\d  digit      \\s  spasi\n  {2}  tepat 2 kali    {2,}  minimal 2 kali\n\nCATATAN:\n• Huruf besar/kecil diabaikan otomatis.\n• Regex yang salah tidak membuat aplikasi error, hanya tidak cocok.\n• Saat mode Regex aktif, trigger disimpan apa adanya (huruf besar dipertahankan).</string>
 </resources>

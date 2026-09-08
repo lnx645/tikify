@@ -42,6 +42,7 @@ import com.tiktoksoundalert.db.AppDatabase;
 import com.tiktoksoundalert.service.TikTokService;
 import com.tiktoksoundalert.SettingsRepository;
 import com.tiktoksoundalert.tiktok.TikTokAvatarResolver;
+import com.tiktoksoundalert.tiktok.TikTokWebSocketClient;
 import com.tiktoksoundalert.ui.SettingsActivity;
 
 public class MainActivity extends AppCompatActivity {
@@ -319,6 +320,9 @@ public class MainActivity extends AppCompatActivity {
                 connecting = false;
                 if (wasConnectedOrConnecting) {
                     setUiConnected(false, null);
+                    if (TikTokWebSocketClient.REASON_STREAM_ENDED.equals(detail)) {
+                        showLiveEndedDialog(host);
+                    }
                 }
                 break;
             case TikTokService.STATUS_ERROR:
@@ -347,6 +351,16 @@ public class MainActivity extends AppCompatActivity {
                 .setMessage("Couldn't connect to " + target + ".\n\n"
                         + (detail != null ? detail : "Please check the username and try again."))
                 .setPositiveButton("OK", (d, w) -> dialogShown = false)
+                .show();
+    }
+
+    private void showLiveEndedDialog(String host) {
+        String target = host != null ? "@" + host : "";
+        new AlertDialog.Builder(this)
+                .setTitle("Live Ended")
+                .setMessage("The live for " + target
+                        + " is already over or the host is offline, so the connection was stopped.")
+                .setPositiveButton("OK", null)
                 .show();
     }
 

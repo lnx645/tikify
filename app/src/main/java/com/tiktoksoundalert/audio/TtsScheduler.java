@@ -48,6 +48,7 @@ public class TtsScheduler {
         final String text;
         final String user;
         final int score;
+        final boolean alreadyBoosted;
         final long createdAt = System.currentTimeMillis();
         final float speed;
         final float pitch;
@@ -56,11 +57,17 @@ public class TtsScheduler {
 
         Task(long id, Type type, String text, String user, int score,
              float speed, float pitch, int volume) {
+            this(id, type, text, user, score, false, speed, pitch, volume);
+        }
+
+        Task(long id, Type type, String text, String user, int score,
+             boolean alreadyBoosted, float speed, float pitch, int volume) {
             this.id = id;
             this.type = type;
             this.text = text;
             this.user = user;
             this.score = score;
+            this.alreadyBoosted = alreadyBoosted;
             this.speed = speed;
             this.pitch = pitch;
             this.volume = volume;
@@ -121,6 +128,8 @@ public class TtsScheduler {
     private float lastAppliedPitch = -1f;
     private long idCounter = 0;
     private volatile boolean stopped = false;
+    /** Bumped on every stop(): detects tasks polled just before a clear. */
+    private long generation = 0;
 
     public interface OnReadyListener {
         void onReady();
@@ -247,22 +256,24 @@ public class TtsScheduler {
         synchronized (lock) {
             Task task = new Task(++idCounter, Type.GIFT, text, user, score,
                     speed, pitch, volume);
-            queue.add(task);
 
-            boolean didPreempt = maybePreempt(task);
-
-            if (queue.size() > HARD_QUEUE_LIMIT) {
-                // Only chat tasks are ever evicted; keep every gift.
-                Task weakest = weakestType(Type.CHAT);
-                if (weakest != null && weakest.score < task.score) {
-                    queue.remove(weakest);
-                } else if (queue.size() > HARD_QUEUE_LIMIT) {
-                    queue.remove(weakestType(Type.GIFT));
+            // Decide the enqueue BEFORE letting the gift stop the current
+            // speaker, so a gift that will be dropped never kills speech for
+            // nothing. Only chat tasks are ever evicted; keep every gift. If
+            // the queue is full of gifts, evict the new task itself instead of
+            // a gift that was already accepted.
+            if (queue.size() >= HARD_QUEUE_LIMIT) {
+                Task weakestChat = weakestType(Type.CHAT);
+                if (weakestChat != null && weakestChat.score < task.score) {
+                    queue.remove(weakestChat);
+                } else {
+                    return Decision.DROPPED;
                 }
             }
 
+            queue.add(task);
             lock.notifyAll();
-            if (didPreempt) return Decision.PREEMPTED;
+            if (maybePreempt(task)) return Decision.PREEMPTED;
             return current == null ? Decision.PLAYED : Decision.QUEUED;
         }
     }
@@ -272,6 +283,7 @@ public class TtsScheduler {
         synchronized (lock) {
             queue.clear();
             interruptedByAlert = null;
+            generation++;
             if (tts != null) {
                 tts.stop();
             }
@@ -284,6 +296,7 @@ public class TtsScheduler {
         synchronized (lock) {
             queue.clear();
             interruptedByAlert = null;
+            generation++;
             lock.notifyAll();
         }
         if (tts != null) {
@@ -303,6 +316,7 @@ public class TtsScheduler {
     private void workerLoop() {
         while (!stopped) {
             Task task;
+            long gen;
             synchronized (lock) {
                 while (queue.isEmpty() && !stopped) {
                     try {
@@ -314,12 +328,13 @@ public class TtsScheduler {
                 }
                 if (stopped) return;
                 task = queue.poll();
+                gen = generation;
             }
-            speakSafely(task);
+            speakSafely(task, gen);
         }
     }
 
-    private void speakSafely(Task task) {
+    private void speakSafely(Task task, long gen) {
         waitForAlertBackoff();
 
         String uid = "tts_" + task.id;
@@ -340,7 +355,21 @@ public class TtsScheduler {
             synchronized (lock) {
                 pendingLatches.put(uid, latch);
             }
-            tts.speak(task.text, uid, task.volume);
+            // Re-check: a concurrent stop()/shutdown() may have cancelled this
+            // task between poll and speak() (generation), or right after
+            // current=task (current). Speak only if the task is still ours.
+            synchronized (lock) {
+                if (stopped || generation != gen || current != task) {
+                    pendingLatches.remove(uid);
+                    latch.countDown();
+                    return;
+                }
+            }
+            boolean ok = tts.speak(task.text, uid, task.volume);
+            if (!ok) {
+                // Engine refused / not ready: don't wait out the full timeout.
+                latch.countDown();
+            }
 
             try {
                 latch.await(UTTERANCE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -352,11 +381,16 @@ public class TtsScheduler {
                     current = null;
                     // An alert effect interrupted THIS utterance: put it back at
                     // the front (boosted) so it resumes once the effect clears.
+                    // The boost is applied once, so a stream of alerts can never
+                    // inflate one task's score without bound (starvation).
                     Task resume = interruptedByAlert;
                     interruptedByAlert = null;
                     if (resume != null && resume.id == task.id) {
+                        int newScore = task.alreadyBoosted
+                                ? task.score
+                                : task.score + REQUEUE_BOOST;
                         queue.add(new Task(++idCounter, task.type, task.text,
-                                task.user, task.score + REQUEUE_BOOST,
+                                task.user, newScore, true,
                                 task.speed, task.pitch, task.volume));
                     }
                     lock.notifyAll();
@@ -367,6 +401,7 @@ public class TtsScheduler {
             synchronized (lock) {
                 pendingLatches.remove(uid);
                 current = null;
+                lock.notifyAll();
             }
         }
     }

@@ -19,19 +19,6 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Alert &amp; Voice">
-        <Preference
-            android:key="open_gift_settings"
-            android:title="Gift Alert Sounds"
-            android:summary="Configure gift notification sounds"
-            android:icon="@drawable/ic_alert" />
-        <Preference
-            android:key="open_tts_settings"
-            android:title="Comment Text-to-Speech"
-            android:summary="Configure how comments are read aloud"
-            android:icon="@drawable/ic_tts" />
-    </PreferenceCategory>
-
     <PreferenceCategory android:title="About">
         <Preference
             android:key="version"

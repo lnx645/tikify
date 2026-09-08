@@ -165,13 +165,6 @@
                         android:text="Semua" />
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_cmd_dot"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text=". token" />
-
-                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_cmd_slash"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon"
                         android:layout_width="wrap_content"
@@ -179,11 +172,11 @@
                         android:text="/ command" />
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_cmd_both"
+                        android:id="@+id/btn_cmd_custom"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Dua-duanya" />
+                        android:text="Custom" />
                 </com.google.android.material.button.MaterialButtonToggleGroup>
 
                 <TextView
@@ -307,6 +300,26 @@
 
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/sw_once_user"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/tts_allow_empty" />
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/sw_allow_empty"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
                 </LinearLayout>

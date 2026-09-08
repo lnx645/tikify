@@ -182,6 +182,10 @@ public class AlertQueueFragment extends Fragment {
         settingsManager = new SettingsManager(requireContext(), accountId);
         soundStore = new GiftSoundStore(requireContext());
 
+        if (previewManager != null) {
+            previewManager.release();
+            previewManager = null;
+        }
         previewManager = new GiftSoundManager(requireContext());
         previewManager.loadBuiltinSounds();
         for (Map.Entry<String, String> e : soundStore.getCustomSounds().entrySet()) {
@@ -284,6 +288,8 @@ public class AlertQueueFragment extends Fragment {
                             ? AlertEventRule.TYPE_GIFT_SPECIFIC : existing.type,
                     existing.giftName, existing.sound,
                     existing.enabled, existing.volume);
+            temp.priority = existing.priority;
+            temp.giftImageUrl = existing.giftImageUrl;
         } else {
             temp = new AlertEventRule(UUID.randomUUID().toString(),
                     AlertEventRule.TYPE_FOLLOW, null, true, 80);
@@ -303,6 +309,7 @@ public class AlertQueueFragment extends Fragment {
         boolean specific = AlertEventRule.TYPE_GIFT_SPECIFIC.equals(temp.type);
         if (AlertEventRule.TYPE_FOLLOW.equals(temp.type)) chips.check(R.id.chip_follow);
         else if (AlertEventRule.TYPE_SHARE.equals(temp.type)) chips.check(R.id.chip_share);
+        else if (AlertEventRule.TYPE_JOIN.equals(temp.type)) chips.check(R.id.chip_join);
         else if (specific) chips.check(R.id.chip_gift_name);
         else chips.check(R.id.chip_gift);
         if (temp.giftName != null) {
@@ -323,6 +330,9 @@ public class AlertQueueFragment extends Fragment {
 
         SwitchCompat swEnabled = content.findViewById(R.id.sw_enabled);
         swEnabled.setChecked(temp.enabled);
+
+        SwitchCompat swPriority = content.findViewById(R.id.sw_priority);
+        swPriority.setChecked(temp.priority);
 
         SeekBar seek = content.findViewById(R.id.seek_volume);
         TextView tvVolume = content.findViewById(R.id.tv_volume_value);
@@ -356,6 +366,7 @@ public class AlertQueueFragment extends Fragment {
             String type;
             if (checkedId == R.id.chip_follow) type = AlertEventRule.TYPE_FOLLOW;
             else if (checkedId == R.id.chip_share) type = AlertEventRule.TYPE_SHARE;
+            else if (checkedId == R.id.chip_join) type = AlertEventRule.TYPE_JOIN;
             else if (checkedId == R.id.chip_gift_name) type = AlertEventRule.TYPE_GIFT_SPECIFIC;
             else type = AlertEventRule.TYPE_GIFT;
 
@@ -372,6 +383,9 @@ public class AlertQueueFragment extends Fragment {
             final boolean specificNow = AlertEventRule.TYPE_GIFT_SPECIFIC.equals(type);
             final String giftTarget = specificNow ? normalizeGift(temp.giftName) : null;
             List<AlertEventRule> list = new ArrayList<>(settingsManager.getAlertQueueRules());
+            // Remove the edited rule first so changing its type replaces it
+            // instead of adding a duplicate beside the old one.
+            list.removeIf(r -> r.id != null && r.id.equals(temp.id));
             list.removeIf(r -> {
                 if (specificNow) {
                     return AlertEventRule.TYPE_GIFT_SPECIFIC.equals(r.type)
@@ -384,6 +398,7 @@ public class AlertQueueFragment extends Fragment {
                 temp.giftName = null;
             }
             temp.enabled = swEnabled.isChecked();
+            temp.priority = swPriority.isChecked();
             temp.volume = seek.getProgress();
             list.add(temp);
             settingsManager.setAlertQueueRules(list);
@@ -427,6 +442,7 @@ public class AlertQueueFragment extends Fragment {
         List<GiftInfo> gifts = new ArrayList<>();
         GiftAdapter adapter = new GiftAdapter(gifts, gift -> {
             temp.giftName = gift.name;
+            temp.giftImageUrl = gift.imageUrl;
             btn.setText(gift.name);
             sheet.dismiss();
         });
@@ -837,6 +853,17 @@ public class AlertQueueFragment extends Fragment {
             Context ctx = holder.itemView.getContext();
             holder.tvAvatar.setText(initialFor(rule));
             holder.tvAvatar.setBackground(oval(colorFor(rule, ctx)));
+            boolean showImage = AlertEventRule.TYPE_GIFT_SPECIFIC.equals(rule.type)
+                    && rule.giftImageUrl != null && !rule.giftImageUrl.isEmpty();
+            holder.ivGiftIcon.setVisibility(showImage ? View.VISIBLE : View.GONE);
+            holder.tvAvatar.setVisibility(showImage ? View.INVISIBLE : View.VISIBLE);
+            if (showImage) {
+                Glide.with(ctx)
+                        .load(rule.giftImageUrl)
+                        .placeholder(ctx.getDrawable(R.drawable.ic_alert))
+                        .circleCrop()
+                        .into(holder.ivGiftIcon);
+            }
             if (AlertEventRule.TYPE_GIFT_SPECIFIC.equals(rule.type)) {
                 holder.tvTitle.setText(rule.giftName == null || rule.giftName.isEmpty()
                         ? "Gift Name" : rule.giftName);
@@ -845,8 +872,9 @@ public class AlertQueueFragment extends Fragment {
             }
             holder.tvSubtitle.setText(ctx.getString(R.string.alert_row_subtitle,
                     soundLabel(rule.sound), rule.volume));
-            holder.swEnabled.setChecked(rule.enabled);
+            holder.tvPriorityBadge.setVisibility(rule.priority ? View.VISIBLE : View.GONE);
             holder.swEnabled.setOnCheckedChangeListener(null);
+            holder.swEnabled.setChecked(rule.enabled);
             holder.swEnabled.setOnCheckedChangeListener((buttonView, isChecked) ->
                     callbacks.onToggle(rule, isChecked));
 
@@ -862,6 +890,7 @@ public class AlertQueueFragment extends Fragment {
         private static String initialFor(AlertEventRule rule) {
             String type = rule.type;
             if (AlertEventRule.TYPE_SHARE.equals(type)) return "S";
+            if (AlertEventRule.TYPE_JOIN.equals(type)) return "J";
             if (AlertEventRule.TYPE_GIFT.equals(type)) return "G";
             if (AlertEventRule.TYPE_GIFT_SPECIFIC.equals(type)) {
                 String gn = rule.giftName;
@@ -877,6 +906,9 @@ public class AlertQueueFragment extends Fragment {
             String type = rule.type;
             if (AlertEventRule.TYPE_SHARE.equals(type)) {
                 return ContextCompat.getColor(context, R.color.share_color);
+            }
+            if (AlertEventRule.TYPE_JOIN.equals(type)) {
+                return ContextCompat.getColor(context, R.color.join_color);
             }
             if (AlertEventRule.TYPE_GIFT.equals(type)
                     || AlertEventRule.TYPE_GIFT_SPECIFIC.equals(type)) {
@@ -899,8 +931,10 @@ public class AlertQueueFragment extends Fragment {
 
         static class VH extends RecyclerView.ViewHolder {
             final TextView tvAvatar;
+            final ImageView ivGiftIcon;
             final TextView tvTitle;
             final TextView tvSubtitle;
+            final TextView tvPriorityBadge;
             final androidx.appcompat.widget.SwitchCompat swEnabled;
             final ImageView ivPreview;
             final ImageView ivDelete;
@@ -908,8 +942,10 @@ public class AlertQueueFragment extends Fragment {
             VH(@NonNull View itemView) {
                 super(itemView);
                 tvAvatar = itemView.findViewById(R.id.tv_avatar);
+                ivGiftIcon = itemView.findViewById(R.id.iv_gift_icon);
                 tvTitle = itemView.findViewById(R.id.tv_title);
                 tvSubtitle = itemView.findViewById(R.id.tv_subtitle);
+                tvPriorityBadge = itemView.findViewById(R.id.tv_priority_badge);
                 swEnabled = itemView.findViewById(R.id.sw_enabled);
                 ivPreview = itemView.findViewById(R.id.iv_preview);
                 ivDelete = itemView.findViewById(R.id.iv_delete);

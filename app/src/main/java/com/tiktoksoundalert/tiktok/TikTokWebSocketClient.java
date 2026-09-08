@@ -42,7 +42,16 @@ public class TikTokWebSocketClient {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
     private static final long HEARTBEAT_INTERVAL_MS = 10_000;
     private static final long STALE_MS = 45_000;
+    /** Live is considered over when no real data frame arrives this long,
+     *  even though the server keeps answering heartbeats. */
+    private static final long DATA_STALE_MS = 90_000;
+    /** If no real data frame arrives within this long after the socket opens,
+     *  the room is not a live stream - fail fast instead of waiting. */
+    private static final long INITIAL_DATA_GRACE_MS = 15_000;
     private static final long RECONNECT_DELAY_MS = 5_000;
+
+    /** Reason reported to the listener when the watchdog decides the live is gone. */
+    public static final String REASON_STREAM_ENDED = "Stream ended";
 
     private final OkHttpClient httpClient;
     private final TikTokLiveListener listener;
@@ -63,12 +72,24 @@ public class TikTokWebSocketClient {
     private final Runnable staleCheck = new Runnable() {
         @Override
         public void run() {
-            if (connected && lastFrameTime > 0
-                    && System.currentTimeMillis() - lastFrameTime > STALE_MS) {
-                Log.d(TAG, "No data for " + STALE_MS + "ms - stream ended, disconnecting");
+            long now = System.currentTimeMillis();
+            boolean noFrames = connected && lastFrameTime > 0
+                    && now - lastFrameTime > STALE_MS;
+            boolean noData = connected && lastEventTime > 0
+                    && now - lastEventTime > DATA_STALE_MS;
+            boolean neverGotData = connected && lastEventTime == 0
+                    && socketOpenTime > 0
+                    && now - socketOpenTime > INITIAL_DATA_GRACE_MS;
+            if (noFrames || noData || neverGotData) {
+                Log.d(TAG, "No event data"
+                        + (neverGotData ? " since socket open" : "")
+                        + " for "
+                        + (noData ? DATA_STALE_MS
+                                  : neverGotData ? INITIAL_DATA_GRACE_MS : STALE_MS)
+                        + "ms - stream ended, disconnecting");
                 // Stream really ended: do NOT auto-reconnect, the live is gone.
                 reconnectOnClose = false;
-                notifyDisconnected("Stream ended");
+                notifyDisconnected(REASON_STREAM_ENDED);
                 disconnect();
             } else if (!stopped) {
                 staleHandler.postDelayed(this, STALE_MS / 3);
@@ -86,6 +107,10 @@ public class TikTokWebSocketClient {
     private volatile boolean stopped = false;
     private volatile boolean connected = false;
     private volatile long lastFrameTime = 0;
+    /** Last time a real (non-heartbeat) data frame arrived. */
+    private volatile long lastEventTime = 0;
+    /** When the socket was last opened; used to fail fast on joined-but-dead rooms. */
+    private volatile long socketOpenTime = 0;
     /** Set false when the stream ended on purpose so we never retry a dead live. */
     private volatile boolean reconnectOnClose = true;
     private String hostName;
@@ -106,6 +131,8 @@ public class TikTokWebSocketClient {
         this.stopped = false;
         this.hbSeq = 1;
         this.reconnectOnClose = true;
+        this.lastEventTime = 0;
+        this.socketOpenTime = 0;
 
         notifyConnecting();
 
@@ -130,6 +157,12 @@ public class TikTokWebSocketClient {
             webSocket = null;
         }
         connected = false;
+    }
+
+    /** Stop the auto-reconnect loop; call before disconnect when the live is gone. */
+    public void disableAutoReconnect() {
+        reconnectOnClose = false;
+        reconnectHandler.removeCallbacks(reconnectRunnable);
     }
 
     public synchronized void reconnect() {
@@ -259,6 +292,7 @@ public class TikTokWebSocketClient {
             @Override
             public void onOpen(WebSocket ws, Response response) {
                 connected = true;
+                socketOpenTime = System.currentTimeMillis();
                 Log.d(TAG, "WebSocket opened");
                 long roomIdL = safeLong(room);
                 ws.send(ByteString.of(ProtobufCodec.pushFrame("im_enter_room", ProtobufCodec.imEnterRoom(roomIdL))));
@@ -328,6 +362,7 @@ public class TikTokWebSocketClient {
                 return;
             }
 
+            lastEventTime = System.currentTimeMillis();
             handleMsgFrame(ws, frame, payload);
         } catch (Throwable e) {
             Log.e(TAG, "failed to parse frame", e);
@@ -422,7 +457,10 @@ public class TikTokWebSocketClient {
 
     private void emitEvent(TikTokEvent event) {
         mainHandler.post(() -> {
-            if (listener != null) listener.onEvent(event);
+            // Drop events that were queued before this socket was disconnected
+            // (e.g. during an account switch) - they belong to a previous host
+            // and must not be processed after the switch.
+            if (listener != null && !stopped) listener.onEvent(event);
         });
     }
 

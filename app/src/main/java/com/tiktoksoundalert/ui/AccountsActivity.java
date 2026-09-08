@@ -1,6 +1,8 @@
 package com.tiktoksoundalert.ui;
 
 import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,6 +25,7 @@ import com.tiktoksoundalert.R;
 import com.tiktoksoundalert.db.Account;
 import com.tiktoksoundalert.db.AccountDao;
 import com.tiktoksoundalert.db.AppDatabase;
+import com.tiktoksoundalert.service.TikTokService;
 import com.tiktoksoundalert.tiktok.TikTokAvatarResolver;
 
 import java.text.SimpleDateFormat;
@@ -271,10 +274,28 @@ public class AccountsActivity extends AppCompatActivity {
 
     private void useAccount(Account account) {
         AppDatabase.runInBackground(() -> {
+            Account current = dao.getActiveNow();
+            if (current != null && current.id == account.id) {
+                return;
+            }
             long now = System.currentTimeMillis();
             dao.clearActive();
             dao.setActive(account.id, now);
+            runOnUiThread(() -> connectTo(account.nickname));
         });
+    }
+
+    /** Start a live connection to the chosen account. The service disconnects any
+     *  previous host before connecting, so only one room is ever active at once. */
+    private void connectTo(String nickname) {
+        Intent serviceIntent = new Intent(this, TikTokService.class);
+        serviceIntent.setAction(TikTokService.ACTION_START);
+        serviceIntent.putExtra(TikTokService.EXTRA_HOSTNAME, nickname);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent);
+        } else {
+            startService(serviceIntent);
+        }
     }
 
     private void deleteAccount(Account account) {

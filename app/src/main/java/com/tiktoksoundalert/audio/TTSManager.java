@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -99,6 +100,9 @@ public class TTSManager {
     private boolean readinessNotified = false;
     private int pendingCount = 0;
 
+    /** Utterance ids handed to the engine but not yet completed (onDone/onError). */
+    private final Set<String> outstanding = new java.util.HashSet<>();
+
     public TTSManager(Context context) {
         this(context, "shared");
     }
@@ -133,6 +137,11 @@ public class TTSManager {
     private void onUtteranceEnded(String utteranceId) {
         if (pendingCount > 0) {
             pendingCount--;
+        }
+        if (utteranceId != null) {
+            synchronized (this) {
+                outstanding.remove(utteranceId);
+            }
         }
         final UtteranceCompletionListener l = utteranceCompletion;
         if (l != null) {
@@ -190,14 +199,14 @@ public class TTSManager {
     }
 
     @SuppressWarnings("deprecation")
-    public void speak(String text, String utteranceId, int volumePercent) {
+    public boolean speak(String text, String utteranceId, int volumePercent) {
         TextToSpeech t = engine;
         if (!engineReady || t == null) {
             Log.w(TAG, "[" + name + "] TTS not initialized, cannot speak");
-            return;
+            return false;
         }
 
-        if (text == null || text.trim().isEmpty()) return;
+        if (text == null || text.trim().isEmpty()) return false;
 
         if (pendingCount > 200) {
             pendingCount = 0;
@@ -211,10 +220,17 @@ public class TTSManager {
         int result = t.speak(text, TextToSpeech.QUEUE_ADD, params);
         if (result == TextToSpeech.ERROR) {
             Log.w(TAG, "[" + name + "] Engine refused utterance: " + text);
+            return false;
         } else {
             pendingCount++;
+            if (utteranceId != null) {
+                synchronized (this) {
+                    outstanding.add(utteranceId);
+                }
+            }
         }
         Log.d(TAG, "[" + name + "] Speaking: " + text);
+        return true;
     }
 
     /** Stop the current utterance and drop everything queued. */
@@ -224,6 +240,29 @@ public class TTSManager {
             t.stop();
         }
         pendingCount = 0;
+        // The engine does NOT deliver onError/onDone for utterances killed by
+        // stop() — and because the engine is shared, one stop() kills the audio
+        // of EVERY manager. Complete every manager's outstanding utterances
+        // ourselves so any awaiting worker unblocks at once instead of hanging
+        // for its full utterance timeout.
+        for (TTSManager m : instances) {
+            m.completeOutstanding();
+        }
+    }
+
+    /** Completes all utterances this manager handed to the engine. */
+    private void completeOutstanding() {
+        java.util.List<String> killed;
+        synchronized (this) {
+            killed = new java.util.ArrayList<>(outstanding);
+            outstanding.clear();
+        }
+        final UtteranceCompletionListener l = utteranceCompletion;
+        if (l != null) {
+            for (String uid : killed) {
+                l.onUtteranceDone(uid);
+            }
+        }
     }
 
     public void stop() {

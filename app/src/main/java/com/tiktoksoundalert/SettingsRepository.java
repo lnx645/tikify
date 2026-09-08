@@ -39,9 +39,13 @@ public final class SettingsRepository {
     // Advanced chat TTS
     public static final String KEY_TTS_VOLUME = "tts_chat_volume";
     public static final String KEY_TTS_COMMAND = "tts_command";
+    public static final String KEY_TTS_TRIGGERS = "tts_triggers";
+    public static final String KEY_TTS_TRIGGER_MODE = "tts_trigger_mode";
+    public static final String KEY_TTS_TRIGGER_ENABLED = "tts_trigger_enabled";
     public static final String KEY_TTS_COOLDOWN_MS = "tts_cooldown_ms";
     public static final String KEY_TTS_MAX_QUEUE = "tts_max_queue";
     public static final String KEY_TTS_LETTER_SPAM = "tts_letter_spam";
+    public static final String KEY_TTS_ALLOW_EMPTY = "tts_allow_empty";
     public static final String KEY_TTS_PRIORITY_WORDS = "tts_priority_words";
     public static final String KEY_TTS_TEMPLATE = "tts_template";
     public static final String KEY_TTS_ALLOWED_USERS = "tts_allowed_users";

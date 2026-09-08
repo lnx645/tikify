@@ -17,6 +17,14 @@ public class SettingsManager {
 
     private final Context appContext;
     private final Map<String, String> values;
+    private final com.google.gson.Gson gson = new com.google.gson.Gson();
+    private final java.lang.reflect.Type rulesListType =
+            new com.google.gson.reflect.TypeToken<java.util.List<com.tiktoksoundalert.models.AlertEventRule>>() {
+            }.getType();
+
+    /** Raw JSON snapshot backing {@link #cachedRules}; null = cache invalid. */
+    private String cachedRulesRaw;
+    private java.util.List<com.tiktoksoundalert.models.AlertEventRule> cachedRules;
 
     public SettingsManager(Context context, long accountId) {
         this.appContext = context.getApplicationContext();
@@ -27,6 +35,8 @@ public class SettingsManager {
     public void reload() {
         values.clear();
         values.putAll(SettingsRepository.load(appContext, accountId));
+        cachedRulesRaw = null;
+        cachedRules = null;
     }
 
     private String get(String key) {
@@ -154,6 +164,28 @@ public class SettingsManager {
     public String getTtsCommand() { return getStr(SettingsRepository.KEY_TTS_COMMAND, ""); }
     public void setTtsCommand(String command) { set(SettingsRepository.KEY_TTS_COMMAND, command); }
 
+    /** Custom rule triggers: comments are matched against these words per the mode. */
+    public Set<String> getTriggerWords() { return getCsv(SettingsRepository.KEY_TTS_TRIGGERS); }
+    public void setTriggerWords(Set<String> words) { setCsv(SettingsRepository.KEY_TTS_TRIGGERS, words); }
+
+    // Trigger matching modes: exact / starts / contains / ends / word / regex
+    public static final String TRIGGER_MODE_EXACT = "exact";
+    public static final String TRIGGER_MODE_STARTS = "starts";
+    public static final String TRIGGER_MODE_CONTAINS = "contains";
+    public static final String TRIGGER_MODE_ENDS = "ends";
+    public static final String TRIGGER_MODE_WORD = "word";
+    public static final String TRIGGER_MODE_REGEX = "regex";
+
+    public String getTriggerMatchMode() {
+        return getStr(SettingsRepository.KEY_TTS_TRIGGER_MODE, TRIGGER_MODE_STARTS);
+    }
+    public void setTriggerMatchMode(String mode) {
+        set(SettingsRepository.KEY_TTS_TRIGGER_MODE, mode);
+    }
+
+    public boolean isTriggerEnabled() { return getBool(SettingsRepository.KEY_TTS_TRIGGER_ENABLED, true); }
+    public void setTriggerEnabled(boolean enabled) { set(SettingsRepository.KEY_TTS_TRIGGER_ENABLED, enabled); }
+
     public int getTtsCooldownMs() { return getInt(SettingsRepository.KEY_TTS_COOLDOWN_MS, 0); }
     public void setTtsCooldownMs(int ms) { set(SettingsRepository.KEY_TTS_COOLDOWN_MS, String.valueOf(ms)); }
 
@@ -162,6 +194,10 @@ public class SettingsManager {
 
     public boolean isLetterSpamBlocked() { return getBool(SettingsRepository.KEY_TTS_LETTER_SPAM, false); }
     public void setLetterSpamBlocked(boolean block) { set(SettingsRepository.KEY_TTS_LETTER_SPAM, block); }
+
+    /** Read comments that are empty or have no meaningful text (e.g. ".", emoji). */
+    public boolean isAllowEmptyComments() { return getBool(SettingsRepository.KEY_TTS_ALLOW_EMPTY, false); }
+    public void setAllowEmptyComments(boolean allow) { set(SettingsRepository.KEY_TTS_ALLOW_EMPTY, allow); }
 
     public Set<String> getPriorityWords() { return getCsv(SettingsRepository.KEY_TTS_PRIORITY_WORDS); }
     public void setPriorityWords(Set<String> words) { setCsv(SettingsRepository.KEY_TTS_PRIORITY_WORDS, words); }
@@ -221,24 +257,28 @@ public class SettingsManager {
     public java.util.List<com.tiktoksoundalert.models.AlertEventRule> getAlertQueueRules() {
         String raw = get(SettingsRepository.KEY_ALERT_QUEUE_RULES);
         if (raw == null || raw.trim().isEmpty()) {
+            cachedRulesRaw = null;
+            cachedRules = null;
             return new java.util.ArrayList<>();
         }
-        try {
-            return new com.google.gson.Gson().fromJson(
-                    raw,
-                    new com.google.gson.reflect.TypeToken<java.util.List<com.tiktoksoundalert.models.AlertEventRule>>() {
-                    }.getType());
-        } catch (Exception e) {
-            return new java.util.ArrayList<>();
+        if (cachedRules == null || cachedRulesRaw == null || !cachedRulesRaw.equals(raw)) {
+            try {
+                cachedRules = gson.fromJson(raw, rulesListType);
+            } catch (Exception e) {
+                cachedRules = new java.util.ArrayList<>();
+            }
+            cachedRulesRaw = raw;
         }
+        return new java.util.ArrayList<>(cachedRules);
     }
 
     public void setAlertQueueRules(java.util.List<com.tiktoksoundalert.models.AlertEventRule> rules) {
         if (rules == null) {
             rules = new java.util.ArrayList<>();
         }
-        set(SettingsRepository.KEY_ALERT_QUEUE_RULES,
-                new com.google.gson.Gson().toJson(rules));
+        cachedRules = new java.util.ArrayList<>(rules);
+        cachedRulesRaw = gson.toJson(cachedRules);
+        set(SettingsRepository.KEY_ALERT_QUEUE_RULES, cachedRulesRaw);
     }
 
     /** Alert effect interrupts in-flight TTS, which resumes when it ends. */

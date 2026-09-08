@@ -9,6 +9,7 @@ public class AlertEventRule {
 
     public static final String TYPE_FOLLOW = "FOLLOW";
     public static final String TYPE_SHARE = "SHARE";
+    public static final String TYPE_JOIN = "JOIN";
     public static final String TYPE_GIFT = "GIFT";
     /** A rule scoped to one specific gift (instead of "Any Gift"). */
     public static final String TYPE_GIFT_SPECIFIC = "GIFT_SPECIFIC";
@@ -22,8 +23,12 @@ public class AlertEventRule {
     public boolean enabled;
     /** 0..100 */
     public int volume;
+    /** When true, this event always beats non-priority alerts in the queue. */
+    public boolean priority;
     /** Canonical gift name for TYPE_GIFT_SPECIFIC rules (ignored otherwise). */
     public String giftName;
+    /** Display image URL for TYPE_GIFT_SPECIFIC rules (ignored otherwise). */
+    public String giftImageUrl;
 
     public AlertEventRule() {
     }
@@ -54,6 +59,7 @@ public class AlertEventRule {
     public static String displayType(String type) {
         if (TYPE_FOLLOW.equals(type)) return "Follow";
         if (TYPE_SHARE.equals(type)) return "Share";
+        if (TYPE_JOIN.equals(type)) return "Join";
         if (TYPE_GIFT.equals(type)) return "Any Gift";
         if (TYPE_GIFT_SPECIFIC.equals(type)) return "Gift Name";
         return type == null ? "" : type;
@@ -62,6 +68,7 @@ public class AlertEventRule {
     public static String labelFor(String type) {
         if (TYPE_FOLLOW.equals(type)) return "Follow";
         if (TYPE_SHARE.equals(type)) return "Share";
+        if (TYPE_JOIN.equals(type)) return "Join";
         return "Gift";
     }
 }

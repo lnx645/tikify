@@ -30,6 +30,7 @@ public class TtsFragment extends Fragment {
     private static final String MODE_BANNED = "banned";
     private static final String MODE_PRIORITY = "priority";
     private static final String MODE_FAVORITES = "favorites";
+    private static final String MODE_TRIGGERS = "triggers";
 
     private SettingsManager settingsManager;
 
@@ -41,9 +42,10 @@ public class TtsFragment extends Fragment {
             tvChatQueue, tvChatMaxlen, tvBannedCount, tvPriorityCount, tvFavCount;
     private SeekBar sbChatSpeed, sbChatPitch, sbChatVolume, sbChatCooldown,
             sbChatQueue, sbChatMaxlen;
-    private SwitchCompat swLetterSpam, swOnceUser;
+    private SwitchCompat swLetterSpam, swOnceUser, swAllowEmpty;
     private TextInputEditText etChatTemplate;
     private MaterialButtonToggleGroup groupCmd, groupWho;
+    private boolean reloading = false;
 
     private SwitchCompat swGiftEnabled;
     private TextView tvGiftSpeed, tvGiftPitch, tvGiftVolume, tvGiftMindia, tvGiftCooldown;
@@ -85,6 +87,7 @@ public class TtsFragment extends Fragment {
         sbChatMaxlen = view.findViewById(R.id.sb_chat_maxlen);
         swLetterSpam = view.findViewById(R.id.sw_letter_spam);
         swOnceUser = view.findViewById(R.id.sw_once_user);
+        swAllowEmpty = view.findViewById(R.id.sw_allow_empty);
         etChatTemplate = view.findViewById(R.id.et_chat_template);
         groupCmd = view.findViewById(R.id.group_cmd);
         groupWho = view.findViewById(R.id.group_who);
@@ -115,6 +118,12 @@ public class TtsFragment extends Fragment {
 
             @Override
             public void onTabReselected(TabLayout.Tab tab) { }
+        });
+
+        groupCmd.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (isChecked && checkedId == R.id.btn_cmd_custom && !reloading) {
+                openWordList(MODE_TRIGGERS);
+            }
         });
 
         bindSlider(sbChatSpeed, tvChatSpeed, "%.1fx");
@@ -196,8 +205,11 @@ public class TtsFragment extends Fragment {
                 settingsManager.getCommentTtsMaxLength()));
         swLetterSpam.setChecked(settingsManager.isLetterSpamBlocked());
         swOnceUser.setChecked(settingsManager.isOncePerUserEnabled());
+        swAllowEmpty.setChecked(settingsManager.isAllowEmptyComments());
         etChatTemplate.setText(settingsManager.getTtsTemplate());
+        reloading = true;
         selectCommand(settingsManager.getTtsCommand());
+        reloading = false;
         selectWho(settingsManager.getAllowedUsersMode());
         updateCounts();
 
@@ -220,9 +232,8 @@ public class TtsFragment extends Fragment {
 
     private void selectCommand(String command) {
         int id = R.id.btn_cmd_all;
-        if (".".equals(command)) id = R.id.btn_cmd_dot;
-        else if ("/".equals(command)) id = R.id.btn_cmd_slash;
-        else if ("both".equals(command)) id = R.id.btn_cmd_both;
+        if ("/".equals(command)) id = R.id.btn_cmd_slash;
+        else if ("custom".equals(command)) id = R.id.btn_cmd_custom;
         groupCmd.check(id);
     }
 
@@ -232,9 +243,8 @@ public class TtsFragment extends Fragment {
 
     private String commandFromGroup() {
         int id = groupCmd.getCheckedButtonId();
-        if (id == R.id.btn_cmd_dot) return ".";
         if (id == R.id.btn_cmd_slash) return "/";
-        if (id == R.id.btn_cmd_both) return "both";
+        if (id == R.id.btn_cmd_custom) return "custom";
         return "";
     }
 
@@ -260,6 +270,7 @@ public class TtsFragment extends Fragment {
         settingsManager.setCommentTtsMaxLength(sbChatMaxlen.getProgress());
         settingsManager.setLetterSpamBlocked(swLetterSpam.isChecked());
         settingsManager.setOncePerUserEnabled(swOnceUser.isChecked());
+        settingsManager.setAllowEmptyComments(swAllowEmpty.isChecked());
         settingsManager.setTtsCommand(commandFromGroup());
         settingsManager.setAllowedUsersMode(whoFromGroup());
         if (!textOf(etChatTemplate).isEmpty()) {

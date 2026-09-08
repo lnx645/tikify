@@ -68,12 +68,19 @@ public class TikTokRoomResolver {
         final String normalizedHost = hostName.trim().replace("@", "");
         new Thread(() -> {
             try {
-                RoomInfo info = tryApi(normalizedHost);
-                if (info != null) {
-                    callback.onSuccess(info);
+                ApiResult api = tryApi(normalizedHost);
+                if (api.info != null) {
+                    callback.onSuccess(api.info);
                     return;
                 }
-                info = tryPage(normalizedHost);
+                // The API answered a valid profile without a live room: the host is
+                // definitively not live. Don't fall back to the page scrape, which
+                // can embed a stale roomId from a previous live.
+                if (api.definitelyNotLive) {
+                    callback.onFailure("@" + normalizedHost + " is not live right now");
+                    return;
+                }
+                RoomInfo info = tryPage(normalizedHost);
                 if (info != null) {
                     callback.onSuccess(info);
                     return;
@@ -86,10 +93,21 @@ public class TikTokRoomResolver {
         }).start();
     }
 
+    /** Result of the live API probe: either a resolved room, a definite "not live",
+     *  or an unknown/blocked outcome that may fall back to the page scrape. */
+    private static final class ApiResult {
+        RoomInfo info;
+        boolean definitelyNotLive;
+    }
+
     /**
-     * Try the anonymous TikTok live API first; returns null if the room is not live.
+     * Probe the TikTok live API. Returns:
+     *  - {@code info != null} when the host is live,
+     *  - {@code definitelyNotLive = true} when the API answered a valid profile
+     *    with no live room (host is offline),
+     *  - a neutral result for blocked/rate-limited/unparseable responses.
      */
-    private RoomInfo tryApi(String host) throws IOException {
+    private ApiResult tryApi(String host) {
         String url = String.format(API_URL, host);
         Request request = new Request.Builder()
                 .url(url)
@@ -99,44 +117,52 @@ public class TikTokRoomResolver {
                 .get()
                 .build();
 
+        ApiResult result = new ApiResult();
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful() || response.body() == null) {
                 Log.d(TAG, "api-live returned HTTP " + response.code());
-                return null;
+                return result;
             }
             String bodyStr = response.body().string();
             JSONObject root = new JSONObject(bodyStr);
             JSONObject data = root.optJSONObject("data");
             if (data == null) {
                 Log.d(TAG, "api-live: no data: " + bodyStr.substring(0, Math.min(150, bodyStr.length())));
-                return null;
+                return result;
             }
             JSONObject user = data.optJSONObject("user");
-            if (user == null || !user.has("roomId")) {
-                Log.d(TAG, "api-live: no user/roomId in response");
-                return null;
+            if (user == null) {
+                Log.d(TAG, "api-live: no user object in response");
+                return result;
+            }
+            if (!user.has("roomId")) {
+                Log.d(TAG, "api-live: @" + host + " is not live (no roomId)");
+                result.definitelyNotLive = true;
+                return result;
             }
             String roomId = user.optString("roomId", "");
+            if (roomId.isEmpty()) {
+                Log.d(TAG, "api-live: roomId present but empty for @" + host);
+                return result;
+            }
             String userId = user.optString("id", "");
             String avatarUrl = firstNonEmpty(
                     user.optString("avatarLarger", ""),
                     user.optString("avatarMedium", ""),
                     user.optString("avatarThumb", ""));
-            if (roomId == null || roomId.isEmpty()) {
-                return null;
-            }
-
             RoomInfo info = new RoomInfo();
             info.roomId = roomId;
             info.userId = userId;
             info.hostName = host;
             info.isLive = true;
             info.avatarUrl = (avatarUrl != null && !avatarUrl.isEmpty()) ? avatarUrl : null;
-            Log.d(TAG, "Resolved (api) userId=" + userId + " roomId=" + roomId + " avatar=" + info.avatarUrl + " for @" + host);
-            return info;
+            Log.d(TAG, "Resolved (api) userId=" + userId + " roomId=" + roomId
+                    + " avatar=" + info.avatarUrl + " for @" + host);
+            result.info = info;
+            return result;
         } catch (Exception e) {
             Log.w(TAG, "api-live failed: " + e.getMessage());
-            return null;
+            return result;
         }
     }
 

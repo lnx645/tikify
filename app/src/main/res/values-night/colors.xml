@@ -6,6 +6,7 @@
     <color name="follow_color">#81C784</color>
     <color name="share_color">#CE93D8</color>
     <color name="join_color">#FFB74D</color>
+    <color name="priority_color">#EF5350</color>
     <color name="error_color">#EF5350</color>
     <color name="connected_color">#81C784</color>
     <color name="disconnected_color">#9E9E9E</color>

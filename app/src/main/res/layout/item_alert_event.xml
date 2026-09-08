@@ -13,16 +13,29 @@
         android:orientation="horizontal"
         android:padding="12dp">
 
-        <TextView
-            android:id="@+id/tv_avatar"
+        <FrameLayout
             android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/bg_avatar_circle"
-            android:gravity="center"
-            android:text="F"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:layout_height="40dp">
+
+            <TextView
+                android:id="@+id/tv_avatar"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_avatar_circle"
+                android:gravity="center"
+                android:text="F"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/iv_gift_icon"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:contentDescription="Gift image"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="0dp"
@@ -46,6 +59,22 @@
                 android:text="ding · Volume 80%"
                 android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
                 android:textColor="@color/text_secondary" />
+
+            <TextView
+                android:id="@+id/tv_priority_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:background="@drawable/bg_priority_badge"
+                android:paddingStart="6dp"
+                android:paddingTop="1dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="1dp"
+                android:text="PRIORITAS"
+                android:textColor="@color/white"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
         </LinearLayout>
 
         <ImageView

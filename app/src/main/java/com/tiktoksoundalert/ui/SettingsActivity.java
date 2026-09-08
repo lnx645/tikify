@@ -1,6 +1,5 @@
 package com.tiktoksoundalert.ui;
 
-import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,7 +18,6 @@ public class SettingsActivity extends AppCompatActivity {
 
     public static final String EXTRA_SECTION = "section";
     public static final String KEY_GENERAL = "general";
-    public static final String KEY_TTS = "tts";
     public static final String KEY_GIFT = "gift";
 
     @Override
@@ -40,9 +38,6 @@ public class SettingsActivity extends AppCompatActivity {
                 case KEY_GIFT:
                     getSupportActionBar().setTitle("Alert Sound Queue");
                     break;
-                case KEY_TTS:
-                    getSupportActionBar().setTitle("Comment Text-to-Speech");
-                    break;
                 default:
                     getSupportActionBar().setTitle("Settings");
                     break;
@@ -54,8 +49,6 @@ public class SettingsActivity extends AppCompatActivity {
         switch (section) {
             case KEY_GIFT:
                 return new AlertQueueFragment();
-            case KEY_TTS:
-                return new TTSSettingsFragment();
             default:
                 return new GeneralSettingsFragment();
         }
@@ -92,31 +85,6 @@ public class SettingsActivity extends AppCompatActivity {
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             useAccountDataStore(this);
             setPreferencesFromResource(R.xml.preferences_general, rootKey);
-            addAccountInfoRow(getPreferenceScreen());
-
-            findPreference("open_gift_settings").setOnPreferenceClickListener(pref -> {
-                launchSettings(KEY_GIFT);
-                return true;
-            });
-
-            findPreference("open_tts_settings").setOnPreferenceClickListener(pref -> {
-                launchSettings(KEY_TTS);
-                return true;
-            });
-        }
-
-        private void launchSettings(String section) {
-            Intent intent = new Intent(requireContext(), SettingsActivity.class);
-            intent.putExtra(EXTRA_SECTION, section);
-            startActivity(intent);
-        }
-    }
-
-    public static class TTSSettingsFragment extends PreferenceFragmentCompat {
-        @Override
-        public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
-            useAccountDataStore(this);
-            setPreferencesFromResource(R.xml.preferences_tts, rootKey);
             addAccountInfoRow(getPreferenceScreen());
         }
     }

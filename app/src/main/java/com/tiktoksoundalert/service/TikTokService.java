@@ -83,6 +83,9 @@ public class TikTokService extends Service {
     private static final int MAX_RECENT_COMMENTS = 200;
     private static final java.util.regex.Pattern LETTER_SPAM_PATTERN =
             java.util.regex.Pattern.compile("(.)\\1{3,}");
+    /** Compiled trigger regexes, bounded LRU-ish cache so busy chats don't recompile per comment. */
+    private static final java.util.Map<String, java.util.regex.Pattern> TRIGGER_REGEX_CACHE =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     /** Last chat/gift TTS time per user, LRU-capped so long streams stay bounded. */
     private final java.util.Map<String, Long> lastChatTts =
@@ -204,6 +207,11 @@ public class TikTokService extends Service {
 
         String newHost = intent.getStringExtra(EXTRA_HOSTNAME);
         if (newHost != null && !newHost.equals(hostName)) {
+            if (webSocketClient != null) {
+                webSocketClient.disconnect();
+                webSocketClient = null;
+            }
+            isConnected = false;
             hostName = newHost;
             bindSettingsForHost(hostName);
             applyMixSettings();
@@ -281,19 +289,22 @@ public class TikTokService extends Service {
         }
     }
 
-    private void connectToRoom() {
-        if (hostName == null || hostName.trim().isEmpty()) {
-            Log.w(TAG, "No hostname provided");
-            return;
-        }
+    /** Clear every session-scoped piece of state so switching hosts (or
+     *  reconnecting) starts from a clean slate: no leftover TTS chat, no queued
+     *  alert sounds, no stats and no de-dup memory from the previous host. */
+    private void resetSessionState() {
         if (topViewersReflector != null) {
             topViewersReflector.clear();
         }
         if (ttsScheduler != null) {
             ttsScheduler.stop();
         }
-        // De-dup memory survives reconnects: TikTok websocket reconnects replay
-        // recent comments, so clearing on every connect made the app re-read them.
+        if (alertQueue != null) {
+            alertQueue.clear();
+        }
+        // De-dup memory survives same-host reconnects (TikTok replays recent
+        // comments, so clearing on every connect made the app re-read them),
+        // but MUST be wiped when the host changes.
         if (hostName != null && !hostName.equals(dedupHost)) {
             recentCommentKeys.clear();
             readUsers.clear();
@@ -301,6 +312,14 @@ public class TikTokService extends Service {
             lastGiftTts.clear();
             dedupHost = hostName;
         }
+    }
+
+    private void connectToRoom() {
+        if (hostName == null || hostName.trim().isEmpty()) {
+            Log.w(TAG, "No hostname provided");
+            return;
+        }
+        resetSessionState();
         if (settingsManager == null) {
             bindSettingsForHost(hostName);
         } else {
@@ -419,6 +438,9 @@ public class TikTokService extends Service {
             case SHARE:
                 playAlertEventSound(AlertEventRule.TYPE_SHARE);
                 break;
+            case JOIN:
+                playAlertEventSound(AlertEventRule.TYPE_JOIN);
+                break;
             default:
                 break;
         }
@@ -461,7 +483,7 @@ public class TikTokService extends Service {
         if (alertQueue != null && settingsManager.isAlertDelayEnabled()) {
             long gapMs = SettingsManager.DELAY_MODE_DURATION.equals(settingsManager.getAlertDelayMode())
                     ? 0L : settingsManager.getAlertDelaySeconds() * 1000L;
-            alertQueue.enqueue(rule.sound, rule.volume, gapMs);
+            alertQueue.enqueue(rule.sound, rule.volume, gapMs, rule.priority);
             return;
         }
 
@@ -559,7 +581,11 @@ public class TikTokService extends Service {
         if (!passesCommand(comment)) return null;
         String text = stripCommand(comment);
         text = text.trim();
-        if (text.isEmpty()) return null;
+        // Empty / unclear comments (".", "!!!", emoji-only, whitespace) are
+        // filtered out unless the user opted to read them ("Allow empty").
+        if (hasNoMeaningfulText(text) && !settingsManager.isAllowEmptyComments()) {
+            return null;
+        }
 
         if (!passesAllowedUser(username)) return null;
 
@@ -578,19 +604,101 @@ public class TikTokService extends Service {
     private boolean passesCommand(String comment) {
         String cmd = settingsManager.getTtsCommand();
         if (cmd == null || cmd.isEmpty()) return true;
-        if ("both".equals(cmd)) return comment.startsWith(".") || comment.startsWith("/");
+        if ("custom".equals(cmd)) {
+            if (!settingsManager.isTriggerEnabled()) return false;
+            return matchingTrigger(comment) != null;
+        }
+        if ("both".equals(cmd)) return comment.startsWith("/");
         return comment.startsWith(cmd);
     }
 
     private String stripCommand(String comment) {
         String cmd = settingsManager.getTtsCommand();
         if (cmd == null || cmd.isEmpty()) return comment;
-        if ("both".equals(cmd)) {
-            if (comment.startsWith(".")) return comment.substring(1);
-            if (comment.startsWith("/")) return comment.substring(1);
+        if ("custom".equals(cmd)) {
+            String trigger = matchingTrigger(comment);
+            // Only "starts" removes the trigger prefix (keeps old token behaviour);
+            // the other modes read the whole comment.
+            if (trigger != null
+                    && SettingsManager.TRIGGER_MODE_STARTS.equals(settingsManager.getTriggerMatchMode())) {
+                return comment.substring(trigger.length());
+            }
             return comment;
         }
+        if ("both".equals(cmd)) {
+            return comment.startsWith("/") ? comment.substring(1) : comment;
+        }
         return comment.startsWith(cmd) ? comment.substring(cmd.length()) : comment;
+    }
+
+    /** First custom trigger the comment matches according to the selected mode, or null. */
+    private String matchingTrigger(String comment) {
+        if (comment == null) return null;
+        String mode = settingsManager.getTriggerMatchMode();
+        String lowerComment = comment.toLowerCase(java.util.Locale.ROOT);
+        for (String trigger : settingsManager.getTriggerWords()) {
+            if (trigger.isEmpty()) continue;
+            String lowerTrigger = trigger.toLowerCase(java.util.Locale.ROOT);
+            boolean matched;
+            switch (mode == null ? SettingsManager.TRIGGER_MODE_STARTS : mode) {
+                case SettingsManager.TRIGGER_MODE_EXACT:
+                    matched = lowerComment.equals(lowerTrigger);
+                    break;
+                case SettingsManager.TRIGGER_MODE_CONTAINS:
+                    matched = lowerComment.contains(lowerTrigger);
+                    break;
+                case SettingsManager.TRIGGER_MODE_ENDS:
+                    matched = lowerComment.endsWith(lowerTrigger);
+                    break;
+                case SettingsManager.TRIGGER_MODE_WORD:
+                    matched = isWholeWord(lowerComment, lowerTrigger);
+                    break;
+                case SettingsManager.TRIGGER_MODE_REGEX:
+                    matched = matchesRegex(comment, trigger);
+                    break;
+                case SettingsManager.TRIGGER_MODE_STARTS:
+                default:
+                    matched = lowerComment.startsWith(lowerTrigger);
+                    break;
+            }
+            if (matched) return trigger;
+        }
+        return null;
+    }
+
+    /** True when trigger appears in the text surrounded by non-letter/digit boundaries. */
+    private boolean isWholeWord(String lowerText, String lowerTrigger) {
+        int from = 0;
+        int len = lowerTrigger.length();
+        while (true) {
+            int idx = lowerText.indexOf(lowerTrigger, from);
+            if (idx < 0) return false;
+            boolean leftOk = idx == 0
+                    || !Character.isLetterOrDigit(lowerText.codePointBefore(idx));
+            boolean rightOk = idx + len >= lowerText.length()
+                    || !Character.isLetterOrDigit(lowerText.codePointAt(idx + len));
+            if (leftOk && rightOk) return true;
+            from = idx + 1;
+        }
+    }
+
+    private boolean matchesRegex(String comment, String pattern) {
+        if (pattern == null || pattern.isEmpty()) return false;
+        java.util.regex.Pattern p = TRIGGER_REGEX_CACHE.get(pattern);
+        if (p == null) {
+            try {
+                p = java.util.regex.Pattern.compile(pattern,
+                        java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.UNICODE_CASE);
+            } catch (java.util.regex.PatternSyntaxException e) {
+                Log.w(TAG, "Invalid trigger regex: " + pattern);
+                return false;
+            }
+            if (TRIGGER_REGEX_CACHE.size() >= 64) {
+                TRIGGER_REGEX_CACHE.clear();
+            }
+            TRIGGER_REGEX_CACHE.put(pattern, p);
+        }
+        return p.matcher(comment).find();
     }
 
     private boolean passesAllowedUser(String username) {
@@ -602,6 +710,17 @@ public class TikTokService extends Service {
 
     private boolean hasLetterSpam(String text) {
         return LETTER_SPAM_PATTERN.matcher(text).find();
+    }
+
+    /** Empty or unclear text: whitespace, punctuation or emoji with no letters/digits. */
+    private boolean hasNoMeaningfulText(String text) {
+        if (text == null || text.isEmpty()) return true;
+        for (int i = 0; i < text.length(); ) {
+            int cp = text.codePointAt(i);
+            if (Character.isLetterOrDigit(cp)) return false;
+            i += Character.charCount(cp);
+        }
+        return true;
     }
 
     private boolean containsAny(String text, java.util.Set<String> words) {
