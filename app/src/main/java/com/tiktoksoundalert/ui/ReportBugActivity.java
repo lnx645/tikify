@@ -67,6 +67,9 @@ public class ReportBugActivity extends AppCompatActivity {
                 Toast.makeText(this, R.string.bug_report_copied, Toast.LENGTH_SHORT).show();
             }
         });
+
+        Button btnClose = findViewById(R.id.btn_bug_close);
+        btnClose.setOnClickListener(v -> finish());
     }
 
     private void sendReport(String body) {

@@ -16,4 +16,9 @@
         android:icon="@drawable/ic_alert"
         android:title="About" />
 
+    <item
+        android:id="@+id/nav_report_bug"
+        android:icon="@drawable/ic_tts"
+        android:title="Report Bug" />
+
 </menu>
