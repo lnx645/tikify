@@ -1,41 +1,48 @@
-# Tikify - Asisten Live TikTok Interaktif & Monitor Views 🚀
+# 🚀 Tikify - Bikin Live TikTok-mu Makin Ramai & Interaktif! 🎙️👁️
 
-**Tikify** adalah aplikasi Android ringkas yang dirancang khusus untuk para *streamer* TikTok yang ingin siaran langsung (LIVE) mereka lebih interaktif dan mudah dipantau. Tanpa perlu *overlay* visual yang rumit, Tikify berfokus penuh pada respons suara otomatis (*Alerts* & *TTS*) serta pemantauan jumlah penonton secara langsung dari HP Android Anda.
+Bosan Live TikTok sepi dan penontonnya pasif? **Tikify** hadir sebagai asisten pribadi Android yang siap mengubah siaran langsung (LIVE) kamu menjadi lebih seru, interaktif, dan banjir *gift*! 
 
-Jadikan LIVE Anda lebih hidup dan interaktif tanpa membebani performa layar *smartphone* Anda!
-
----
-
-## 🌟 Fitur Utama
-
-### 🎙️ Text-to-Speech (TTS) Komentar & Gift
-* Ubah komentar penonton, pesan donasi, atau nama pemberi *gift* menjadi suara otomatis secara *real-time*. Anda tetap bisa berinteraksi dengan penonton tanpa harus terus-menerus menatap layar obrolan.
-
-### 🎵 Pemberitahuan Suara Otomatis (Sound Alerts)
-* Pemicu efek suara unik (seperti suara meme, bel, atau sirine) secara instan setiap kali Anda menerima *Like*, *Follow*, *Share*, atau *Gift* tertentu. Sangat ampuh untuk memicu penonton memberikan lebih banyak *gift*!
-
-### 👁️ Pantau Jumlah Penonton Langsung (Live Views Monitor)
-* Pantau statistik jumlah penonton (*views*) secara akurat dan *real-time*. Dapatkan notifikasi suara atau tanda khusus saat jumlah penonton LIVE Anda mencapai target tertentu.
+Nggak perlu PC berspesifikasi tinggi atau pengaturan OBS yang rumit. Cukup lewat HP Android, Tikify fokus memberikan respons suara otomatis (*Alerts* & *TTS*) serta memantau penonton secara *real-time*.
 
 ---
 
-## 🔥 Mengapa Memilih Tikify?
+## 🔥 Fitur Unggulan Tikify
 
-* **Ringan & Tanpa Overlay Layar:** Tanpa elemen visual tambahan yang menutupi layar, sehingga sangat hemat baterai, hemat RAM, dan tidak mengganggu performa saat Anda bermain game *mobile*.
-* **Fokus pada Audio:** Mengandalkan sistem audio cerdas (TTS dan efek suara) agar Anda bisa tetap fokus pada konten LIVE atau permainan Anda.
-* **Pengaturan Instan & Aman:** Hubungkan dengan akun TikTok Anda hanya dalam hitungan detik menggunakan *username* tanpa memerlukan kata sandi.
+### 🎙️ Text-to-Speech (TTS) Pintar
+* **Komentar Dibaca Otomatis:** Tikify langsung mengubah obrolan, pesan donasi, atau nama penonton menjadi suara secara *real-time*. Kamu bisa fokus main game atau jualan tanpa harus terus-menerus melirik kolom *chat*!
 
----
+### 🎵 Pemberitahuan Suara Gokil (Sound Alerts)
+* **Pemicu Gift & Interaksi:** Pasang efek suara unik (suara meme, bel gokil, atau sirine) yang otomatis berbunyi setiap ada yang *Like*, *Follow*, *Share*, atau kirim *Gift* tertentu. Bikin penonton ketagihan buat sawer!
 
-## 🛠️ Cara Memulai & Unduh
-
-1. **Unduh Aplikasi:** Klik tautan resmi berikut untuk mengunduh berkas APK langsung ke HP Anda:
-   👉 [**Download Tikify APK Terbaru**](https://github.com/lnx645/tikify/releases/download/release/app-release-unsigned.apk)
-2. **Instal APK:** Buka berkas yang telah diunduh dan izinkan instalasi dari sumber tidak dikenal jika diminta oleh sistem Android Anda.
-3. **Hubungkan Akun:** Masukkan *username* TikTok Anda untuk menyambungkan ruang LIVE.
-4. **Aktifkan Fitur:** Atur suara TTS, efek suara *gift*, atau aktifkan pelacak penonton sesuai kebutuhan Anda.
-5. Klik **"Mulai Asisten"** dan mulailah siaran langsung di TikTok seperti biasa!
+### 👁️ Pantau Penonton Akurat (Live Views Monitor)
+* **Pantau Angka Real-Time:** Awasi statistik jumlah penonton (*views*) secara langsung dan akurat. Kamu bisa tahu kapan penontonmu lagi ramai-ramainya!
 
 ---
 
-🗣️ *Catatan: Berkas APK di atas merupakan versi unsigned release resmi dari repositori GitHub lnx645. Aplikasi ini dikembangkan secara independen untuk membantu kreator dan tidak berafiliasi langsung dengan TikTok Inc.*
+## ⭐ Kenapa Harus Pakai Tikify?
+
+* **Super Ringan & Tanpa Overlay Layar:** Layar HP kamu tetap bersih dan bebas lag! Sangat hemat baterai dan RAM, cocok banget buat *mobile gaming* atau Live berjam-jam.
+* **Fokus pada Audio & Responsif:** Interaksi berbasis suara bikin suasana Live jauh lebih hidup, akrab, dan menyenangkan.
+* **100% Aman:** Cukup masukkan *username* TikTok kamu. **Tanpa password**, jadi akunmu dijamin aman.
+
+---
+
+## 🛠️ Cepat & Instan! Alur Penggunaan Tikify
+
+Cuma butuh waktu kurang dari 1 menit untuk langsung tancap gas:
+
+1. 📥 **Download**  
+   Unduh aplikasi resmi Tikify langsung ke HP Android kamu melalui tautan di bawah ini:  
+   👉 [**Download Tikify APK Terbaru**](https://github.com)
+2. 📱 **Buka**  
+   Instal berkas APK-nya dan buka aplikasi Tikify.
+3. ➕ **Tambah Akun**  
+   Masukkan *username* TikTok kamu (bisa tambah lebih dari satu akun untuk manajemen yang mudah).
+4. 👆 **Pilih Akun**  
+   Ketuk akun mana yang ingin kamu pakai untuk Live hari ini.
+5. ⚡ **Connect!**  
+   Klik hubungkan, lalu mulailah Live di TikTok. Rasakan sensasi Live yang interaktif secara otomatis!
+
+---
+
+📣 *Catatan Penting: Berkas di atas adalah versi unsigned release resmi dari repositori GitHub lnx645. Aplikasi ini dikembangkan secara independen oleh kreator dan tidak berafiliasi langsung dengan TikTok Inc.*
